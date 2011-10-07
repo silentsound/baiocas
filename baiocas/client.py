@@ -5,6 +5,7 @@ import logging
 
 from channel import Channel
 from channel_id import ChannelId
+from listener import Listener
 from message import FailureMessage, Message
 from status import ClientStatus
 from transports.long_polling import LongPollingHttpTransport
@@ -68,6 +69,7 @@ class Client(object):
         self._extensions = []
 
         # Event listeners keyed by event
+        self._event_listener_id = 0
         self._event_listeners = {}
 
         # Configure the client
@@ -629,11 +631,18 @@ class Client(object):
         for listener in self._event_listeners.get(event, []):
             try:
                 self.log.debug('Invoking callback "%s" for event %s' % \
-                    (listener.__name__, event))
-                listener(self, *args, **kwargs)
+                    (listener.function.__name__, event))
+                final_args = args
+                final_kwargs = kwargs
+                if listener.extra_args:
+                    final_args += listener.extra_args
+                if listener.extra_kwargs:
+                    final_kwargs = final_kwargs.copy()
+                    final_kwargs.update(listener.extra_kwargs)
+                listener.function(self, *final_args, **final_kwargs)
             except Exception, ex:
                 self.log.warn('Exception with listener "%s" for event %s: %s' % \
-                    (listener.__name__, event, ex))
+                    (listener.function.__name__, event, ex))
 
     def flush_batch(self):
         self.log.debug('Flushing batch of %d messages' % len(self._message_queue))
@@ -682,10 +691,16 @@ class Client(object):
         extension.register(self)
         return True
 
-    def register_listener(self, event, listener):
-        self.log.debug('Registered "%s" for event %s' % (listener.__name__, event))
-        self._event_listeners.setdefault(event, []).append(listener)
-        return True
+    def register_listener(self, event, function, *extra_args, **extra_kwargs):
+        self.log.debug('Registered "%s" for event %s' % (function.__name__, event))
+        self._event_listener_id += 1
+        self._event_listeners.setdefault(event, []).append(Listener(
+            id=self._event_listener_id,
+            function=function,
+            extra_args=extra_args,
+            extra_kwargs=extra_kwargs
+        ))
+        return self._event_listener_id
 
     def register_transport(self, transport):
         if not self._transports.add(transport):
@@ -712,19 +727,37 @@ class Client(object):
         self.log.debug('Unregistered extension %s' % extension)
         return True
 
-    def unregister_listener(self, event, listener):
-        if event not in self._event_listeners:
-            self.log.warn('Failed to unregister "%s" for event %s, not registered' % \
-                (listener.__name__, event))
-            return False
-        listeners = self._event_listeners[event]
-        if listener not in listeners:
-            self.log.warn('Failed to unregister "%s" for event %s, not registered' % \
-                (listener.__name__, event))
-            return False
-        listeners.remove(listener)
-        self.log.debug('Unregistered "%s" for event %s' % (listener.__name__, event))
-        return True
+    def unregister_listener(self, id=None, event=None, function=None):
+        if (id is not None) != (event is not None or function is not None):
+            raise ValueError('Either id or event/function must be given')
+        unregistered = 0
+        if id is not None:
+            for event, listeners in self._event_listeners.iteritems():
+                for index, listener in enumerate(listeners):
+                    if listener.id == id:
+                        del listeners[index]
+                        unregistered = 1
+                        break
+        elif event is not None:
+            listeners = self._event_listeners.get(event)
+            to_remove = []
+            for index, listener in enumerate(listeners):
+                if function is None or listener.function == function:
+                    to_remove.append(index)
+            for index in reversed(to_remove):
+                del listeners[index]
+            unregistered += len(to_remove)
+        else:
+            for event, listeners in self._event_listeners.iteritems():
+                to_remove = []
+                for index, listener in enumerate(listeners):
+                    if listener.function == function:
+                        to_remove.append(index)
+                for index in reversed(to_remove):
+                    del listeners[index]
+                unregistered += len(to_remove)
+        self.log.debug('Unregistered %d listeners' % unregistered)
+        return bool(unregistered)
 
     def unregister_transport(self, name):
         tranport = self._transports.remove(name)

@@ -1,11 +1,8 @@
 import logging
 
 from channel_id import ChannelId
-from lib.namedtuple import namedtuple
+from listener import Listener
 from message import Message
-
-
-Listener = namedtuple('Listener', 'id function extra_args extra_kwargs')
 
 
 class Channel(object):
@@ -64,12 +61,12 @@ class Channel(object):
                 self._client.fire(self._client.EVENT_LISTENER_EXCEPTION, listener, message, ex)
 
     def _remove_listener(self, listeners, id=None, function=None):
-        if id is None and listener is None:
-            raise ValueError('Either id or listener must be given')
+        if (id is not None) != (listener is not None):
+            raise ValueError('Either id or function must be given')
         success = False
         if id is not None:
             for index, listener in enumerate(listeners):
-                if id == listener.id:
+                if listener.id == id:
                     function = listener.function
                     del listeners[index]
                     success = True
