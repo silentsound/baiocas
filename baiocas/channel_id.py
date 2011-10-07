@@ -69,3 +69,11 @@ class ChannelId(unicode):
                 wilds.append(name)
             wilds.append(name + '*')
         return wilds
+
+    @classmethod
+    def convert(cls, value):
+        if isinstance(value, cls):
+            return value
+        if not isinstance(value, basestring):
+            raise TypeError('Expected string, got %s' % type(value))
+        return cls(value)

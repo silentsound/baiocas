@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 from twisted.internet import reactor
+from twisted.internet.defer import Deferred
 import logging
 
 from channel import Channel
@@ -70,7 +71,7 @@ class Client(object):
         self._event_listeners = {}
 
         # Configure the client
-        self.options = self.DEFAULT_OPTIONS.copy()
+        self._options = self.DEFAULT_OPTIONS.copy()
         self.configure(**options)
 
     @property
@@ -94,6 +95,10 @@ class Client(object):
         return ClientStatus.is_disconnected(self._status)
 
     @property
+    def options(self):
+        return self._options.copy()
+
+    @property
     def status(self):
         return self._status
 
@@ -111,14 +116,14 @@ class Client(object):
             method = outgoing and 'send' or 'receive'
             return getattr(extension, method)(message)
         except Exception, ex:
-            self.log.debug('Exception during execution of extension %s: %s' % \
+            self.log.warn('Exception during execution of extension %s: %s' % \
                 (extension, ex))
             self.fire(self.EVENT_EXTENSION_EXCEPTION, message, ex, outgoing=outgoing)
 
     def _apply_incoming_extensions(self, message):
         self.log.debug('Applying extensions to incoming message')
         extensions = self._extensions
-        if self.options['reverse_incoming_extensions']:
+        if self._options['reverse_incoming_extensions']:
             self.log.debug('Reversing order of extensions')
             extensions = reversed(self._extensions)
         for extension in extensions:
@@ -188,16 +193,21 @@ class Client(object):
         delay = self._advice['interval'] + self._backoff_period
         self.log.debug('Send scheduled in %sms, interval = %s, backoff = %s: %s' % \
             (delay, self._advice['interval'], self._backoff_period, method.__name__))
-        self._scheduled_send = reactor.callLater(delay, method, *args, **kwargs)
+        if delay == 0:
+            method(*args, **kwargs)
+        else:
+            self._scheduled_send = reactor.callLater(delay / 1000.0, method, *args, **kwargs)
 
     def _disconnect(self, abort=False):
+        if self._status == ClientStatus.DISCONNECTED:
+            return
         self.log.debug('Disconnecting client')
+        self._set_status(ClientStatus.DISCONNECTED)
         self._cancel_delayed_send()
         if abort:
             self.log.debug('Aborting transport')
             self._transport.abort()
         self._client_id = None
-        self._set_status(ClientStatus.DISCONNECTED)
         self._batch = 0
         self._reset_backoff_period()
         if len(self._message_queue) > 0:
@@ -223,9 +233,11 @@ class Client(object):
         self.log.debug('Handling connect response')
         self._connected = message.successful
         if self._connected:
-            self.log.debug('Client is now connected')
+            self.log.info('Client is now connected')
             self._notify_listeners(ChannelId.META_CONNECT, message)
-            action = None if self.is_disconnected else self._advice[Message.FIELD_RECONNECT]
+            action = self._advice[Message.FIELD_RECONNECT]
+            if self.is_disconnected:
+                action = Message.RECONNECT_NONE
             if action == Message.RECONNECT_RETRY:
                 self._reset_backoff_period()
                 self._delay_connect()
@@ -234,7 +246,7 @@ class Client(object):
             else:
                 raise errors.ActionError(action)
         else:
-            self.log.debug('Client failed to connect')
+            self.log.info('Client failed to connect')
             self._notify_connect_failure(message)
 
     def _handle_disconnect_failure(self, message):
@@ -243,22 +255,24 @@ class Client(object):
 
     def _handle_disconnect_response(self, message):
         self.log.debug('Handling disconnect response')
-        if messgae.successful:
-            self.log.debug('Client is now disconnected')
+        if message.successful:
+            self.log.info('Client is now disconnected')
             self._disconnect()
             self._notify_listeners(ChannelId.META_DISCONNECT, message)
         else:
-            self.log.debug('Client failed to disconnect')
+            self.log.info('Client failed to disconnect')
             self._notify_disconnect_failure(message)
 
     def _handle_failure(self, messages, exception):
-        self.log.debug('Handling failure for exception: %s' % exception)
+        self.log.debug('Handling %d failed messages for exception: %s' % (len(messages), exception))
         for message in messages:
             handler = self._handle_message_failure
             if message.channel.is_meta:
-                handler_name = '_handle_%s_failure' % '_'.join(message.channel.parts)
+                handler_name = '_handle_%s_failure' % '_'.join(message.channel.parts[1:])
+                self.log.debug('Looking for handler named %s' % handler_name)
                 if hasattr(self, handler_name):
                     handler = getattr(self, handler_name)
+            self.log.debug('Passing message to handler %s' % handler.__name__)
             handler(message)
 
     def _handle_handshake_failure(self, message):
@@ -275,11 +289,11 @@ class Client(object):
         # Fail immediately if the message was not successful
         self.log.debug('Handling handshake response')
         if not message.successful:
-            self.log.debug('Client failed to handshake')
+            self.log.info('Client failed to handshake')
             self._notify_handshake_failure(message)
 
         # Save the client ID
-        self.log.debug('Handshake successful, client ID = %s' % message.client_id)
+        self.log.info('Handshake successful, client ID = %s' % message.client_id)
         self._client_id = message.client_id
 
         # Negotiate a transport with the server
@@ -301,7 +315,9 @@ class Client(object):
         self._notify_listeners(ChannelId.META_HANDSHAKE, message)
 
         # Handle the advice action
-        action = None if self.is_disconnected else self._advice[Message.FIELD_RECONNECT]
+        action = self._advice[Message.FIELD_RECONNECT]
+        if self.is_disconnected:
+            action = Message.RECONNECT_NONE
         if action == Message.RECONNECT_RETRY:
             self._reset_backoff_period()
             self._delay_connect()
@@ -326,7 +342,7 @@ class Client(object):
             if message.data:
                 self._notify_listeners(message.channel, message)
             else:
-                self.log.debug('Unknown message received: %s' % message)
+                self.log.warn('Unknown message received: %s' % message)
         elif message.successful == True:
             self.log.debug('Client received successful message')
             self._notify_listeners(ChannelId.META_PUBLISH, message)
@@ -342,10 +358,10 @@ class Client(object):
         self.log.debug('Handling subscribe response')
         channel = message.subscription
         if message.successful:
-            self.log.debug('Client subscribed to channel "%s"' % channel)
+            self.log.info('Client subscribed to channel "%s"' % channel)
             self._notify_listeners(ChannelId.META_SUBSCRIBE, message)
         else:
-            self.log.debug('Client failed to subscribe to channel "%s"' % channel)
+            self.log.info('Client failed to subscribe to channel "%s"' % channel)
             self._notify_subscribe_failure(message)
 
     def _handle_unsubscribe_failure(self, message):
@@ -356,16 +372,16 @@ class Client(object):
         self.log.debug('Handling unsubscribe response')
         channel = message.subscription
         if message.successful:
-            self.log.debug('Client unsubscribed from channel "%s"' % channel)
+            self.log.info('Client unsubscribed from channel "%s"' % channel)
             self._notify_listeners(ChannelId.META_UNSUBSCRIBE, message)
         else:
-            self.log.debug('Client failed to unsubscribe from channel "%s"' % channel)
+            self.log.info('Client failed to unsubscribe from channel "%s"' % channel)
             self._notify_unsubscribe_failure(message)
 
     def _handshake(self, properties=None):
 
         # Reset state before starting
-        self.log.debug('Starting handshake')
+        self.log.info('Starting handshake')
         self._client_id = None
         self.clear_subscriptions()
 
@@ -377,7 +393,7 @@ class Client(object):
         if self.is_disconnected:
             self.log.debug('Client disconnected, resetting advice')
             self._transports.reset()
-            self._update_advice(self.options['advice'])
+            self._update_advice(self._options['advice'])
         else:
             self.log.debug('Client not disconnected, using retry advice')
             advice = self._advice.copy()
@@ -423,15 +439,17 @@ class Client(object):
         self._send(message, for_setup=True)
 
     def _increase_backoff_period(self):
-        if self._backoff_period < self.options['maximum_backoff_period']:
-            self._backoff_period += self.options['backoff_period_increment']
+        if self._backoff_period < self._options['maximum_backoff_period']:
+            self._backoff_period += self._options['backoff_period_increment']
             self.log.debug('Increasing backoff period to %s' % self._backoff_period)
 
     def _notify_connect_failure(self, message):
         self.log.debug('Notifying listeners of failed connect')
         self._notify_listeners(ChannelId.META_CONNECT, message)
         self._notify_listeners(ChannelId.META_UNSUCCESSFUL, message)
-        action = None if self.is_disconnected else self._advice[Message.FIELD_RECONNECT]
+        action = self._advice[Message.FIELD_RECONNECT]
+        if self.is_disconnected:
+            action = Message.RECONNECT_NONE
         if action == Message.RECONNECT_RETRY:
             self.log.debug('Retry reconnect advice received')
             self._increase_backoff_period()
@@ -449,7 +467,7 @@ class Client(object):
 
     def _notify_disconnect_failure(self, message):
         self.log.debug('Notifying listeners of failed disconnect')
-        self._disconnect()
+        self._disconnect(abort=True)
         self._notify_listeners(ChannelId.META_DISCONNECT, message)
         self._notify_listeners(ChannelId.META_UNSUCCESSFUL, message)
 
@@ -457,7 +475,7 @@ class Client(object):
         self.log.debug('Notifying listeners of failed handshake')
         self._notify_listeners(ChannelId.META_HANDSHAKE, message)
         self._notify_listeners(ChannelId.META_UNSUCCESSFUL, message)
-        if not self.is_disconnected and self._advice[Message.FIELD_RECONNECT] is not None:
+        if not self.is_disconnected and self._advice[Message.FIELD_RECONNECT] != Message.RECONNECT_NONE:
             self._increase_backoff_period()
             self._delay_handshake()
         else:
@@ -471,8 +489,7 @@ class Client(object):
         channel.notify_listeners(message)
 
         # Make sure we have a channel Id
-        if not isinstance(channel_id, ChannelId):
-            channel_id = ChannelId(channel_id)
+        channel_id = ChannelId.convert(channel_id)
 
         # Notify the wildcard listeners
         for wild in channel_id.get_wilds():
@@ -565,26 +582,26 @@ class Client(object):
     def _set_status(self, status):
         if status == self._status:
             return
-        self.log.debug('Status changed from %s to %s' % (self._status, status))
+        self.log.info('Status: %s -> %s' % (self._status, status))
         self._status = status
 
     def _update_advice(self, new_advice):
         if new_advice:
-            advice = self.options['advice'].copy()
+            advice = self._options['advice'].copy()
             advice.update(new_advice)
             self._advice = advice
             self.log.debug('New advice: %s' % self._advice)
 
     def clear_subscriptions(self):
-        self.log.debug('Clearing subscriptions')
+        self.log.info('Clearing subscriptions')
         for channel in self._channels.itervalues():
             channel.clear_subscriptions()
 
     def configure(self, **options):
         if not options:
             return
-        self.options.update(options)
-        self.log.debug('Options changed to: %s' % self.options)
+        self._options.update(options)
+        self.log.debug('Options changed to: %s' % self._options)
 
     def disconnect(self, properties=None):
         if self.is_disconnected:
@@ -611,10 +628,12 @@ class Client(object):
         self.log.debug('Firing event %s' % event)
         for listener in self._event_listeners.get(event, []):
             try:
-                self.log.debug('Invoking callback %s for event %s' % (listener, event))
+                self.log.debug('Invoking callback "%s" for event %s' % \
+                    (listener.__name__, event))
                 listener(self, *args, **kwargs)
             except Exception, ex:
-                self.log.info('Exception with listener %s for event %s' % (listener, event))
+                self.log.warn('Exception with listener "%s" for event %s: %s' % \
+                    (listener.__name__, event, ex))
 
     def flush_batch(self):
         self.log.debug('Flushing batch of %d messages' % len(self._message_queue))
@@ -627,11 +646,10 @@ class Client(object):
 
     def get_channel(self, channel_id):
         self.log.debug('Fetching channel %s' % channel_id)
+        channel_id = ChannelId.convert(channel_id)
         channel = self._channels.get(channel_id)
         if not channel:
             self.log.debug('Channel does not exist, creating with ID %s' % channel_id)
-            if not isinstance(channel_id, ChannelId):
-                channel_id = ChannelId(channel_id)
             channel = Channel(self, channel_id)
             self._channels[channel_id] = channel
         return channel
@@ -655,7 +673,7 @@ class Client(object):
         self.handshake(properties=properties)
 
     def receive_messages(self, messages):
-        self.log.debug('Received %d messages' % len(messages))
+        self.log.info('Received %d messages' % len(messages))
         map(self._receive, messages)
 
     def register_extension(self, extension):
@@ -665,13 +683,13 @@ class Client(object):
         return True
 
     def register_listener(self, event, listener):
-        self.log.debug('Registered %s for event %s' % (listener, event))
+        self.log.debug('Registered "%s" for event %s' % (listener.__name__, event))
         self._event_listeners.setdefault(event, []).append(listener)
         return True
 
     def register_transport(self, transport):
         if not self._transports.add(transport):
-            self.log.debug('Failed to register transport %s' % transport)
+            self.log.warn('Failed to register transport %s' % transport)
             return False
         self.log.debug('Registered transport %s' % transport)
         transport.register(self, url=self._url)
@@ -687,7 +705,7 @@ class Client(object):
 
     def unregister_extension(self, extension):
         if extension not in self._extensions:
-            self.log.debug('Failed to unregister extension %s, not registered' % extension)
+            self.log.warn('Failed to unregister extension %s, not registered' % extension)
             return False
         self._extensions.remove(extension)
         extension.unregister()
@@ -696,24 +714,35 @@ class Client(object):
 
     def unregister_listener(self, event, listener):
         if event not in self._event_listeners:
-            self.log.debug('Failed to unregister %s for event %s, not registered' % (listener, event))
+            self.log.warn('Failed to unregister "%s" for event %s, not registered' % \
+                (listener.__name__, event))
             return False
         listeners = self._event_listeners[event]
         if listener not in listeners:
-            self.log.debug('Failed to unregister %s for event %s, not registered' % (listener, event))
+            self.log.warn('Failed to unregister "%s" for event %s, not registered' % \
+                (listener.__name__, event))
             return False
         listeners.remove(listener)
-        self.log.debug('Unregistered %s for event %s' % (listener, event))
+        self.log.debug('Unregistered "%s" for event %s' % (listener.__name__, event))
         return True
 
     def unregister_transport(self, name):
         tranport = self._transports.remove(name)
         if not transport:
-            self.log.debug('Failed to unregister transport %s, not registered' % name)
+            self.log.warn('Failed to unregister transport %s, not registered' % name)
             return None
         self.log.debug('Unregistered transport %s' % transport)
         transport.unregister()
         return transport
+
+    def wait_for_message(self, channel_id, successful_only=False):
+        channel = self.get_channel(channel_id)
+        wait_for_message = Deferred()
+        def _receive_message(channel, message):
+            if not successful_only or message.successful:
+                wait_for_message.callback(None)
+        channel.add_listener(_receive_message)
+        return wait_for_message
 
     @contextmanager
     def batch(self):

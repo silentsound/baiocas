@@ -72,10 +72,8 @@ class Message(dict):
             object.__setattr__(self, name, value)
 
     def __setitem__(self, key, value):
-        if key == self.FIELD_CHANNEL and \
-            value is not None and \
-            not isinstance(value, ChannelId):
-            value = ChannelId(value)
+        if key == self.FIELD_CHANNEL and value is not None:
+            value = ChannelId.convert(value)
         dict.__setitem__(self, key, value)
 
     @property
@@ -104,7 +102,7 @@ class Message(dict):
     @classmethod
     def from_json(cls, value, encoding=None):
         if encoding is not None:
-            value = value.decode(encoding)
+            value = value.decode(encoding, 'replace')
         messages = loads(value)
         if not isinstance(messages, (list, tuple)):
             messages = [messages]
@@ -112,9 +110,9 @@ class Message(dict):
 
     @classmethod
     def to_json(cls, messages, encoding=None):
-        value = dumps(messages)
+        value = dumps(messages, ensure_ascii=False)
         if encoding is not None:
-            value = value.encode('utf8')
+            value = value.encode(encoding)
         return value
 
 

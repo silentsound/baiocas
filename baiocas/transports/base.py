@@ -15,8 +15,9 @@ class Transport(object):
     def __init__(self, **options):
         self.log = logging.getLogger('%s.%s' % (self.__module__, self.name))
         self._client = None
-        self.options = options
+        self._options = {}
         self.url = None
+        self.configure(**options)
 
     def __repr__(self):
         return self.name
@@ -28,6 +29,10 @@ class Transport(object):
     @property
     def parsed_url(self):
         return self._parsed_url
+
+    @property
+    def options(self):
+        return self._options.copy()
 
     def _get_url(self):
         return self._url
@@ -48,8 +53,14 @@ class Transport(object):
     def accept(self, bayeux_version):
         raise NotImplementedError('Must be implemented by child classes')
 
+    def configure(self, **options):
+        if not options:
+            return
+        self._options.update(options)
+        self.log.debug('Options changed to: %s' % self._options)
+
     def get_timeout(self, messages):
-        timeout = self.options.get(
+        timeout = self._options.get(
             self.OPTION_MAXIMUM_NETWORK_DELAY,
             self.DEFAULT_MAXIMUM_NETWORK_DELAY
         )

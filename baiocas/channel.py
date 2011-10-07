@@ -1,7 +1,11 @@
 import logging
 
 from channel_id import ChannelId
+from lib.namedtuple import namedtuple
 from message import Message
+
+
+Listener = namedtuple('Listener', 'id function extra_args extra_kwargs')
 
 
 class Channel(object):
@@ -10,6 +14,7 @@ class Channel(object):
         self.log = logging.getLogger('%s.%s' % (self.__module__, self.__class__.__name__))
         self._client = client
         self._channel_id = channel_id
+        self._listener_id = 0
         self._listeners = []
         self._subscriptions = []
 
@@ -36,60 +41,98 @@ class Channel(object):
     def has_subscriptions(self):
         return len(self._subscriptions) > 0
 
-    def add_listener(self, listener):
-        self._listeners.append(listener)
-        self.log.debug('Added listener %s for channel %s' % (listener, self._channel_id))
+    def _add_listener(self, listeners, function, extra_args, extra_kwargs):
+        self._listener_id += 1
+        listeners.append(Listener(
+            id=self._listener_id,
+            function=function,
+            extra_args=extra_args,
+            extra_kwargs=extra_kwargs
+        ))
+        self.log.debug('Added listener "%s" for channel %s' % \
+            (function.__name__, self._channel_id))
+        return self._listener_id
+
+    def _notify_listeners(self, listeners, message):
+        for listener in listeners:
+            try:
+                self.log.debug('Notifying listener "%s" of message' % listener.function.__name__)
+                listener.function(self, message, *listener.extra_args, **listener.extra_kwargs)
+            except Exception, ex:
+                self.log.warn('Exception with listener "%s" with %s: %s' % \
+                    (listener.function.__name__, message, ex))
+                self._client.fire(self._client.EVENT_LISTENER_EXCEPTION, listener, message, ex)
+
+    def _remove_listener(self, listeners, id=None, function=None):
+        if id is None and listener is None:
+            raise ValueError('Either id or listener must be given')
+        success = False
+        if id is not None:
+            for index, listener in enumerate(listeners):
+                if id == listener.id:
+                    function = listener.function
+                    del listeners[index]
+                    success = True
+                    break
+        else:
+            to_remove = []
+            for index, listener in enumerate(listeners):
+                if function == listener.function:
+                    to_remove.append(index)
+            for index in reversed(to_remove):
+                del listeners[index]
+            success = bool(to_remove)
+        self.log.debug('Removed listener(s) "%s" for channel %s' % \
+            listener.function.__name__, self._channel_id)
+        return success
+
+    def add_listener(self, function, *extra_args, **extra_kwargs):
+        return self._add_listener(self._listeners, function, extra_args, extra_kwargs)
 
     def clear_listeners(self):
         self._listeners = []
+        self.log.debug('Cleared listeners for channel %s' % self._channel_id)
 
     def clear_subscriptions(self):
         self._subscriptions = []
-        self.log.debug('Cleared subscriptions for channel %s' % self.channel_id)
+        self.log.debug('Cleared subscriptions for channel %s' % self._channel_id)
 
     def get_wilds(self):
         return self._channel_id.get_wilds()
 
     def notify_listeners(self, message):
-        for listener in self._listeners:
-            try:
-                self.log.debug('Notifying listener %s of message' % listener)
-                listener(self, message)
-            except Exception, ex:
-                self.log.debug('Exception during notification of %s with %s: %s' % \
-                    (listener, message, ex))
-                self._client.fire(self._client.EVENT_LISTENER_EXCEPTION, listener, message, ex)
+        self._notify_listeners(self._listeners, message)
+        if message.data:
+            self._notify_listeners(self._subscriptions, message)
 
     def publish(self, content, properties=None):
         self.log.debug('Publishing content to channel: %s' % content)
         message = Message(properties, channel=self._channel_id, data=content)
         self._client.send(message)
 
-    def remove_listener(self, listener):
-        if listener in self._listeners:
-            self._listeners.remove(listener)
-            self.log.debug('Removed listener %s for channel %s' % (listener, self._channel_id))
+    def remove_listener(self, id=None, function=None):
+        return self._remove_listener(self._listeners, id=id, function=function)
 
-    def subscribe(self, listener, properties=None):
-        self.log.debug('Subscribing listener %s to channel' % listener)
+    def subscribe(self, function, *extra_args, **extra_kwargs):
+        properties = None
+        if 'properties' in extra_kwargs:
+            properties = extra_kwargs.pop('properties')
         if not self.has_subscriptions:
-            self.log.debug('Channel has no existing subscriptions, sending subscribe')
+            self.log.debug('Subscribe to channel "%s"' % self._channel_id)
             message = Message(properties,
                 channel=ChannelId.META_SUBSCRIBE,
                 subscription=self._channel_id
             )
             self._client.send(message)
-        self._subscriptions.append(listener)
+        return self._add_listener(self._subscriptions, function, extra_args, extra_kwargs)
 
-    def unsubscribe(self, listener):
-        self.log.debug('Unsubscribing listener %s from channel' % listener)
-        if listener in self._listeners:
-            self._listeners.remove(listener)
-        if self.has_subscriptions:
-            return
-        self.log.debug('Channel has no remaining subscriptions, sending unsubscribe')
-        message = Message(properties,
-            channel=ChannelId.META_UNSUBSCRIBE,
-            subscription=self._channel_id
-        )
-        self._client.send(message)
+    def unsubscribe(self, id=None, function=None):
+        success = self._remove_listener(self._subscriptions, id=id, function=function)
+        if not self.has_subscriptions:
+            self.log.debug('Channel has no remaining subscriptions, sending unsubscribe')
+            message = Message(properties,
+                channel=ChannelId.META_UNSUBSCRIBE,
+                subscription=self._channel_id
+            )
+            self._client.send(message)
+        return success

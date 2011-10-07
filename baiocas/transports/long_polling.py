@@ -45,7 +45,7 @@ class LongPollingHttpTransport(HttpTransport):
     def _handle_response(self, response, messages):
         self.log.debug('Received response: %s %s' % (response.code, response.phrase))
         for header, values in response.headers.getAllRawHeaders():
-            self.log.debug('Header "%s": %s' % (header, '; '.join(values)))
+            self.log.debug('Response header %s: %s' % (header, '; '.join(values)))
         if response.code >= 400:
             raise errors.ServerError(response.code, response.phrase)
         finished = Deferred()
@@ -88,23 +88,24 @@ class LongPollingHttpTransport(HttpTransport):
                 url += '/'
             url += message_type
 
-        # Get the headers for the request; done here so we can log them
-        headers = self.get_headers()
-        self.log.debug('Using headers: %s' % headers)
+        # Get the headers for the request
+        headers = Headers(self.get_headers())
+        for header, values in headers.getAllRawHeaders():
+            self.log.debug('Request header %s: %s' % (header, '; '.join(values)))
 
         # Send the request
         self.log.debug('Sending message to %s' % url)
         request = self._agent.request(
             'POST',
             url,
-            headers=Headers(headers),
+            headers=headers,
             bodyProducer=MessageProducer(messages)
         )
         self._requests.append(request)
 
         # Set up the timeout
         timeout = reactor.callLater(
-            self.get_timeout(messages),
+            self.get_timeout(messages) / 1000.0,
             self._cancel_request,
             request,
             messages

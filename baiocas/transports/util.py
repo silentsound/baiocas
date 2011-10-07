@@ -35,8 +35,10 @@ class MessageProducer(object):
     implements(IBodyProducer)
 
     def __init__(self, messages):
+        self.log = logging.getLogger('%s.%s' % (self.__module__, self.__class__.__name__))
         self.body = Message.to_json(messages, encoding='utf8')
         self.length = len(self.body)
+        self.log.debug('Request body (length: %d): %s' % (self.length, self.body))
 
     def startProducing(self, consumer):
         consumer.write(self.body)
@@ -76,4 +78,4 @@ class MessageConsumer(Protocol):
             return
         value = ''.join(self._buffer)
         self.log.debug('Received body: %s' % value)
-        self._finished.callback(Message.from_json(value))
+        self._finished.callback(Message.from_json(value, encoding='utf8'))
