@@ -107,9 +107,9 @@ class Channel(object):
         if message.data:
             self._notify_listeners(self._subscriptions, message)
 
-    def publish(self, content, properties=None):
-        self.log.debug('Publishing content to channel: %s' % content)
-        message = Message(properties, channel=self._channel_id, data=content)
+    def publish(self, data, properties=None):
+        self.log.debug('Publishing data to channel: %s' % data)
+        message = Message(properties, channel=self._channel_id, data=data)
         self._client.send(message)
 
     def remove_listener(self, id=None, function=None):
