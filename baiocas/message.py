@@ -108,6 +108,8 @@ class Message(dict):
 
     @classmethod
     def to_json(cls, messages, encoding=None):
+        if not isinstance(messages, (list, tuple)):
+            messages = [messages]
         value = dumps(messages, ensure_ascii=False)
         if encoding is not None:
             value = value.encode(encoding)
