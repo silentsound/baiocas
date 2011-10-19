@@ -123,7 +123,7 @@ class FailureMessage(Message):
     FIELD_REQUEST = 'request'
 
     def __init__(self, *args, **kwargs):
-        failure_kwargs = dict(
+        default_fields = dict(
             successful=False,
             exception=None,
             advice={
@@ -131,8 +131,7 @@ class FailureMessage(Message):
                 self.FIELD_INTERVAL: 0
             }
         )
-        failure_kwargs.update(kwargs)
-        super(FailureMessage, self).__init__(*args, **failure_kwargs)
+        super(FailureMessage, self).__init__(default_fields, *args, **kwargs)
 
     @classmethod
     def from_message(cls, message, exception=None, **kwargs):
