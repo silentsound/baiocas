@@ -77,10 +77,10 @@ class TransportNegotiationError(BayeuxError):
     """Raised when the Bayeux client and server could not agree on a transport."""
 
     def __init__(self, client_types, server_types):
-        super(TransportNegotiationError, self).__init()
+        super(TransportNegotiationError, self).__init__()
         self.client_types = client_types
         self.server_types = server_types
 
     def __str__(self):
-        return 'Could not negotiate transport with server; client %s, server %s' % \
+        return 'Could not negotiate transport with server; client: %s; server: %s' % \
             (', '.join(self.client_types), ', '.join(self.server_types))
