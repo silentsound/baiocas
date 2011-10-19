@@ -32,7 +32,7 @@ class AckExtension(Extension):
             if self._get_ack(message):
                 self._server_supports_acks = True
             self.log.debug('Server supports acks: %s' % self._server_supports_acks)
-        elif self._server_supports_acks and channel == '/meta/connect' and message.successful:
+        elif self._server_supports_acks and channel == ChannelId.META_CONNECT and message.successful:
             if isinstance(self._get_ack(message), int):
                 self._ack_id = self._get_ack(message)
                 self.log.debug('Server sent ACK ID: %s' % self._ack_id)
@@ -44,7 +44,7 @@ class AckExtension(Extension):
             self._set_ack(message, self._client.ack_enabled)
             self._ack_id = None
             self.log.debug('Handshake being sent, clearing ACK ID')
-        elif self._server_supports_acks and channel == '/meta/connect':
+        elif self._server_supports_acks and channel == ChannelId.META_CONNECT:
             self._set_ack(message, self._ack_id)
             self.log.debug('Sending ACK ID: %s' % self._ack_id)
         return message
