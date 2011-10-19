@@ -10,12 +10,16 @@ class Channel(object):
     def __init__(self, client, channel_id):
         self.log = logging.getLogger('%s.%s' % (self.__module__, self.__class__.__name__))
         self._client = client
-        self._channel_id = channel_id
+        self._channel_id = ChannelId.convert(channel_id)
         self._listener_id = 0
         self._listeners = []
         self._subscriptions = []
 
     def __repr__(self):
+        return self._channel_id
+
+    @property
+    def channel_id(self):
         return self._channel_id
 
     @property
