@@ -30,13 +30,8 @@ class ChannelId(unicode):
     # Pattern for deep wildcard channel IDs
     WILD_DEEP = '**'
 
-    def __new__(cls, base=u'', encoding=None, errors='strict'):
-        if encoding is None:
-            return unicode.__new__(cls, base)
-        return unicode.__new__(cls, base, encoding, errors)
-
-    def __init__(self, value):
-        self._parts = value.split('/')
+    def __init__(self, string=u'', encoding=None, errors='strict'):
+        self._parts = string.split('/')
 
     def __eq__(self, other):
         if not isinstance(other, basestring):
