@@ -12,6 +12,14 @@ class AckExtension(Extension):
         self._server_supports_acks = False
         self._ack_id = None
 
+    @property
+    def ack_id(self):
+        return self._ack_id
+
+    @property
+    def server_supports_acks(self):
+        return self._server_supports_acks
+
     def _get_ack(self, message):
         return message.get(message.FIELD_EXT, {}).get(self.FIELD_ACK)
 

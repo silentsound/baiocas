@@ -11,6 +11,10 @@ class Extension(object):
         return self.name
 
     @property
+    def client(self):
+        return self._client
+
+    @property
     def name(self):
         return self.__class__.__name__
 
