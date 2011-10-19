@@ -61,7 +61,7 @@ class Channel(object):
                 self._client.fire(self._client.EVENT_LISTENER_EXCEPTION, listener, message, ex)
 
     def _remove_listener(self, listeners, id=None, function=None):
-        if (id is not None) != (listener is not None):
+        if (id is not None) == (function is not None):
             raise ValueError('Either id or function must be given')
         success = False
         if id is not None:

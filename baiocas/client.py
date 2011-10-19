@@ -728,7 +728,7 @@ class Client(object):
         return True
 
     def unregister_listener(self, id=None, event=None, function=None):
-        if (id is not None) != (event is not None or function is not None):
+        if (id is not None) == (event is not None or function is not None):
             raise ValueError('Either id or event/function must be given')
         unregistered = 0
         if id is not None:
