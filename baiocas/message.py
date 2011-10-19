@@ -41,8 +41,6 @@ class Message(dict):
 
     FIELD_TIMESTAMP = 'timestamp'
 
-    FIELD_TRANSPORT = 'transport'
-
     FIELD_VERSION = 'version'
 
     RECONNECT_HANDSHAKE = 'handshake'
