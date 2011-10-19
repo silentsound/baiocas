@@ -128,7 +128,7 @@ class Channel(object):
             self._client.send(message)
         return self._add_listener(self._subscriptions, function, extra_args, extra_kwargs)
 
-    def unsubscribe(self, id=None, function=None):
+    def unsubscribe(self, id=None, function=None, properties=None):
         success = self._remove_listener(self._subscriptions, id=id, function=function)
         if not self.has_subscriptions:
             self.log.debug('Channel has no remaining subscriptions, sending unsubscribe')
