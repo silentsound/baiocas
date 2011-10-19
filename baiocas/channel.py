@@ -83,8 +83,9 @@ class Channel(object):
             for index in reversed(to_remove):
                 del listeners[index]
             success = bool(to_remove)
-        self.log.debug('Removed listener(s) "%s" for channel %s' % \
-            listener.function.__name__, self._channel_id)
+        if success:
+            self.log.debug('Removed listener(s) "%s" for channel %s' % \
+                (function.__name__, self._channel_id))
         return success
 
     def add_listener(self, function, *extra_args, **extra_kwargs):
