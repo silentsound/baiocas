@@ -31,7 +31,6 @@ except ImportError:
         Point(x=11, y=22)
         >>> p._replace(x=100)               # _replace() is like str.replace() but targets named fields
         Point(x=100, y=22)
-
         """
 
         # Parse and validate the field names.  Validation serves two purposes,
@@ -95,7 +94,7 @@ except ImportError:
             def __getnewargs__(self):
                 return tuple(self) \n\n''' % locals()
         for i, name in enumerate(field_names):
-            template += '        %s = _property(_itemgetter(%d))\n' % (name, i)
+            template += '            %s = _property(_itemgetter(%d))\n' % (name, i)
         if verbose:
             print template
 
@@ -105,7 +104,7 @@ except ImportError:
         try:
             exec template in namespace
         except SyntaxError, e:
-            raise SyntaxError(e.message + ':\n' + template)
+            raise SyntaxError('%s:\n%s' % (e, template))
         result = namespace[typename]
 
         # For pickling to work, the __module__ variable needs to be set to the frame
