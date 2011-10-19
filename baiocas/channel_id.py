@@ -48,7 +48,7 @@ class ChannelId(unicode):
 
     @property
     def is_wild_deep(self):
-        return self.endwith('/' + self.WILD_DEEP)
+        return self.endswith('/' + self.WILD_DEEP)
 
     @property
     def parts(self):
