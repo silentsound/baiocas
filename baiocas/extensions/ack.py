@@ -41,7 +41,7 @@ class AckExtension(Extension):
     def send(self, message):
         channel = message.channel
         if channel == ChannelId.META_HANDSHAKE:
-            self._set_ack(message, self._client.ack_enabled)
+            self._set_ack(message, self._client.options.get('ack_enabled', True))
             self._ack_id = None
             self.log.debug('Handshake being sent, clearing ACK ID')
         elif self._server_supports_acks and channel == ChannelId.META_CONNECT:
