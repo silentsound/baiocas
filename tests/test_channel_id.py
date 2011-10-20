@@ -1,5 +1,6 @@
+from unittest import TestCase
+
 from baiocas.channel_id import ChannelId
-from tests import TestCase
 
 
 class TestChannelId(TestCase):

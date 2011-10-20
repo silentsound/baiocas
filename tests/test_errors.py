@@ -1,5 +1,6 @@
+from unittest import TestCase
+
 from baiocas import errors
-from tests import TestCase
 
 
 class TestBayeuxError(TestCase):

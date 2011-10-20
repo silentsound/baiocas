@@ -1,7 +1,7 @@
+from unittest import TestCase
 import logging
 
 from baiocas.extensions.base import Extension
-from tests import TestCase
 
 
 class TestExtension(TestCase):

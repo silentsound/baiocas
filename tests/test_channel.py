@@ -1,11 +1,11 @@
 from mock import MagicMock, Mock
+from unittest import TestCase
 
 from baiocas.channel import Channel
 from baiocas.channel_id import ChannelId
 from baiocas.client import Client
 from baiocas.listener import Listener
 from baiocas.message import Message
-from tests import TestCase
 
 
 class TestChannel(TestCase):

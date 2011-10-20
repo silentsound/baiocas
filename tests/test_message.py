@@ -1,9 +1,9 @@
 from email.utils import formatdate
 from simplejson import dumps, loads
+from unittest import TestCase
 
 from baiocas.channel_id import ChannelId
 from baiocas.message import FailureMessage, Message
-from tests import TestCase
 
 
 class TestMessage(TestCase):

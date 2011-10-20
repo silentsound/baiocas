@@ -1,8 +1,9 @@
+from unittest import TestCase
+
 from baiocas.channel_id import ChannelId
 from baiocas.client import Client
 from baiocas.extensions.ack import AckExtension
 from baiocas.message import Message
-from tests import TestCase
 
 
 class TestAckExtension(TestCase):

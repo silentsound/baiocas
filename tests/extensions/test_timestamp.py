@@ -1,11 +1,11 @@
 from __future__ import with_statement
 from email.utils import formatdate
 from mock import patch
+from unittest import TestCase
 
 from baiocas.client import Client
 from baiocas.extensions import timestamp
 from baiocas.message import Message
-from tests import TestCase
 
 
 class TestTimestampExtension(TestCase):

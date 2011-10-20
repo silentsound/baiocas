@@ -1,6 +1,7 @@
+from unittest import TestCase
+
 from baiocas.transports.base import Transport
 from baiocas.transports.registry import TransportRegistry
-from tests import TestCase
 
 
 class MockTransport(Transport):

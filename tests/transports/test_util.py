@@ -7,13 +7,13 @@ from twisted.python.failure import Failure
 from twisted.web.client import ResponseDone
 from twisted.web.error import Error
 from twisted.web.http import NOT_FOUND, PotentialDataLoss
+from unittest import TestCase
 import logging
 import time
 
 from baiocas import errors
 from baiocas.message import Message
 from baiocas.transports.util import is_cookie_expired, MessageConsumer, MessageProducer
-from tests import TestCase
 
 
 class TestExpiredCookie(TestCase):

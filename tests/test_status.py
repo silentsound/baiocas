@@ -1,5 +1,6 @@
+from unittest import TestCase
+
 from baiocas.status import ClientStatus
-from tests import TestCase
 
 
 class TestClientStatus(TestCase):

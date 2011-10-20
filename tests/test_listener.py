@@ -1,5 +1,6 @@
+from unittest import TestCase
+
 from baiocas.listener import Listener
-from tests import TestCase
 
 
 class TestListener(TestCase):

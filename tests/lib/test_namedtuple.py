@@ -1,8 +1,9 @@
 from cPickle import dumps, HIGHEST_PROTOCOL, loads
+from unittest import TestCase
 import sys
 
 from baiocas.lib import namedtuple
-from tests import ModuleMask, TestCase
+from ..util import ModuleMask
 
 
 class TestNamedTuple(TestCase):
