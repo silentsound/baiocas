@@ -210,7 +210,7 @@ class Client(object):
             self.log.debug('Aborting transport')
             self._transport.abort()
         self._client_id = None
-        self._batch = 0
+        self._batch_id = 0
         self._reset_backoff_period()
         if len(self._message_queue) > 0:
             self.log.debug('Failing queued messages')
@@ -405,7 +405,7 @@ class Client(object):
         # Mark the start of an internal batch. Since all calls are asynchronous,
         # this ensures that no other messages are sent until the connection is
         # fully established.
-        self._batch = 0
+        self._batch_id = 0
         self._internal_batch = True
 
         # Save the properties provided so we can reuse them during re-handshakes
@@ -615,9 +615,9 @@ class Client(object):
         self._send(message, for_setup=True)
 
     def end_batch(self):
-        self.log.debug('Ended batch with ID %s' % self._batch)
-        self._batch -= 1
-        if self._batch < 0:
+        self.log.debug('Ended batch with ID %s' % self._batch_id)
+        self._batch_id -= 1
+        if self._batch_id < 0:
             raise errors.BatchError()
         if not self.is_batching and not self.is_disconnected:
             self.flush_batch()
@@ -715,8 +715,8 @@ class Client(object):
         self._queue_send(message)
 
     def start_batch(self):
-        self._batch += 1
-        self.log.debug('Started batch with ID %s' % self._batch)
+        self._batch_id += 1
+        self.log.debug('Started batch with ID %s' % self._batch_id)
 
     def unregister_extension(self, extension):
         if extension not in self._extensions:
