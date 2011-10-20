@@ -55,7 +55,10 @@ class LongPollingHttpTransport(HttpTransport):
         return response
 
     def _handle_response_finished(self, messages, response):
-        self.update_cookies(response.headers.getRawHeaders('Set-Cookie', []))
+        self.update_cookies(
+            response.headers.getRawHeaders('Set-Cookie', []),
+            time_received=response.headers.getRawHeaders('Date')
+        )
         self._client.receive_messages(messages)
         return messages
 

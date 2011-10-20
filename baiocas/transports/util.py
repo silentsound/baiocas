@@ -1,4 +1,4 @@
-from cookielib import http2time
+from email.utils import mktime_tz, parsedate_tz
 from twisted.internet.defer import succeed
 from twisted.internet.protocol import Protocol
 from twisted.web.client import ResponseDone
@@ -21,9 +21,12 @@ def is_cookie_expired(cookie):
     if not value:
         return False
     if value.isdigit():
-        expires = time.time() + int(value)
+        time_received = getattr(cookie, 'time_received', time.time())
+        expires = time_received + int(value)
     else:
-        expires = http2time(value)
+        expires = parsedate_tz(value)
+        if expires:
+            expires = mktime_tz(expires)
     if expires and expires <= time.time():
         return True
     return False

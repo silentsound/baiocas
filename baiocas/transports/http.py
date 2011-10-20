@@ -1,4 +1,6 @@
+from email.utils import mktime_tz, parsedate_tz
 import Cookie
+import time
 
 from base import Transport
 from util import is_cookie_expired
@@ -57,6 +59,7 @@ class HttpTransport(Transport):
         self._cookies[name] = value
         cookie = self._cookies[name]
         cookie.update(attrs)
+        cookie.time_received = time.time()
         self.log.debug('Set cookie %s = %s' % (name, value))
         return cookie
 
@@ -68,7 +71,19 @@ class HttpTransport(Transport):
         headers = self._options.setdefault(self.OPTION_HEADERS, {})
         headers[name.lower()] = values
 
-    def update_cookies(self, values):
+    def update_cookies(self, values, time_received=None):
+        cookies = Cookie.SimpleCookie()
+        if isinstance(time_received, (list, tuple)):
+            time_received = time_received[0] if time_received else None
+        if isinstance(time_received, basestring):
+            time_received = parsedate_tz(time_received)
+            if time_received:
+                time_received = mktime_tz(time_received)
+        if time_received is None:
+            time_received = time.time()
         for value in values:
-            self._cookies.load(value)
+            cookies.load(value)
+        for cookie in cookies.itervalues():
+            cookie.time_received = time_received
+        self._cookies.load(cookies)
         self.log.debug('Updated cookie headers: %s' % values)
