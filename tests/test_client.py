@@ -100,6 +100,7 @@ class TestClient(TestCase):
                 successful=True
             )
         ])
+        self.transport.clear_sent_messages()
 
     def create_mock_function(self, name='mock', **kwargs):
         mock = Mock(**kwargs)
@@ -114,6 +115,7 @@ class TestClient(TestCase):
                 successful=True
             )
         ])
+        self.transport.clear_sent_messages()
 
     def setUp(self):
         self.client = Client('http://www.example.com')
@@ -474,7 +476,6 @@ class TestClient(TestCase):
 
     def test_batch(self):
         self.connect_client()
-        self.transport.clear_sent_messages()
         mock_message = self.mock_message.copy()
         with self.client.batch():
             assert self.client.is_batching
