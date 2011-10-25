@@ -104,6 +104,16 @@ class TestMessage(TestCase):
         message['successful'] = True
         assert not message.failure
 
+    def test_copy(self):
+        message = Message()
+        message_copy = message.copy()
+        assert message == message_copy
+        assert isinstance(message_copy, Message)
+        message = Message(channel='/test', id='1', ext={'ack': True})
+        message_copy = message.copy()
+        assert message == message_copy
+        assert isinstance(message_copy, Message)
+
     def test_setdefault(self):
         message = Message()
         self.assertRaises(KeyError, message.__getitem__, 'ext')

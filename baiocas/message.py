@@ -81,6 +81,10 @@ class Message(dict):
     def _get_key_from_name(self, name):
         return getattr(self.__class__, 'FIELD_' + name.upper(), None)
 
+    def copy(self):
+        raw_message = super(Message, self).copy()
+        return Message(raw_message)
+
     def setdefault(self, key, value=None):
         if key not in self:
             self[key] = value
