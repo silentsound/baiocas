@@ -618,10 +618,10 @@ class Client(object):
         self._send(message, for_setup=True)
 
     def end_batch(self):
+        if self._batch_id == 0:
+            raise errors.BatchError()
         self.log.debug('Ended batch with ID %s' % self._batch_id)
         self._batch_id -= 1
-        if self._batch_id < 0:
-            raise errors.BatchError()
         if not self.is_batching and not self.is_disconnected:
             self.flush_batch()
 
