@@ -742,7 +742,7 @@ class Client(object):
                         unregistered = 1
                         break
         elif event is not None:
-            listeners = self._event_listeners.get(event)
+            listeners = self._event_listeners.get(event, [])
             to_remove = []
             for index, listener in enumerate(listeners):
                 if function is None or listener.function == function:
