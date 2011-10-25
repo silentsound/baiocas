@@ -226,6 +226,39 @@ class TestClient(TestCase):
         options['backoff_period_increment'] = 0
         assert self.client.options == options
 
+    def test_disconnect(self):
+
+        # Connect the client so we can disconnect
+        self.connect_client()
+
+        # Issue the disconnect request
+        self.client.disconnect()
+        assert self.client.status == ClientStatus.DISCONNECTING
+        assert len(self.transport.sent_messages) == 1
+        message = self.transport.sent_messages[0]
+        assert message == {
+            'id': str(self.client.message_id),
+            'channel': ChannelId.META_DISCONNECT,
+            'clientId': self.client.client_id
+        }
+
+        # Make sure we can't attempt to disconnect again during a disconnect
+        self.client.disconnect()
+        assert self.client.status == ClientStatus.DISCONNECTING
+        assert len(self.transport.sent_messages) == 1
+
+        # Complete the disconnect
+        self.transport.receive([
+            Message(
+                channel=ChannelId.META_DISCONNECT,
+                successful=True
+            )
+        ])
+        assert self.client.status == ClientStatus.DISCONNECTED
+        assert len(self.transport.sent_messages) == 1
+        assert self.client.backoff_period == 0
+        assert self.client.client_id is None
+
     def test_end_batch(self):
         self.assertRaises(errors.BatchError, self.client.end_batch)
         with patch.object(self.client, 'flush_batch') as mock_flush_batch:
