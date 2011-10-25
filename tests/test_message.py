@@ -214,6 +214,7 @@ class TestFailureMessage(TestCase):
     def test_from_message(self):
         message = Message()
         failure_message = FailureMessage.from_message(message)
+        assert isinstance(failure_message, FailureMessage)
         assert failure_message.exception is None
         assert failure_message == {
             'channel': None,
@@ -230,6 +231,7 @@ class TestFailureMessage(TestCase):
             exception=exception,
             successful=True
         )
+        assert isinstance(failure_message, FailureMessage)
         assert failure_message == {
             'channel': '/test',
             'id': '1',
