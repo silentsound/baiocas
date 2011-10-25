@@ -198,7 +198,7 @@ class Client(object):
         if delay == 0:
             method(*args, **kwargs)
         else:
-            self._scheduled_send = reactor.callLater(delay / 1000.0, method, *args, **kwargs)
+            self._scheduled_send = self.call_later(delay / 1000.0, method, *args, **kwargs)
 
     def _disconnect(self, abort=False):
         if self._status == ClientStatus.DISCONNECTED:
@@ -593,6 +593,9 @@ class Client(object):
             advice.update(new_advice)
             self._advice = advice
             self.log.debug('New advice: %s' % self._advice)
+
+    # Map reactor.callLater so that we can replace it during testing
+    call_later = reactor.callLater
 
     def clear_subscriptions(self):
         self.log.info('Clearing subscriptions')
