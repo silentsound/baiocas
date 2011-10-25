@@ -97,6 +97,10 @@ class Client(object):
         return ClientStatus.is_disconnected(self._status)
 
     @property
+    def message_id(self):
+        return self._message_id
+
+    @property
     def options(self):
         return self._options.copy()
 

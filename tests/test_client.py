@@ -168,6 +168,11 @@ class TestClient(TestCase):
         self.disconnect_client()
         assert self.client.is_disconnected
 
+    def test_message_id(self):
+        assert self.client.message_id == 0
+        self.client.handshake()
+        assert self.client.message_id == 1
+
     def test_options(self):
         options = self.client.options
         assert options == self.DEFAULT_OPTIONS
