@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from mock import Mock, patch
 from twisted.trial.unittest import TestCase
 import logging
@@ -7,7 +8,7 @@ from baiocas.channel_id import ChannelId
 from baiocas.client import Client
 from baiocas.extensions.base import Extension
 from baiocas.status import ClientStatus
-from baiocas.message import Message
+from baiocas.message import FailureMessage, Message
 from baiocas.transports.base import Transport
 
 
@@ -258,6 +259,41 @@ class TestClient(TestCase):
         assert len(self.transport.sent_messages) == 1
         assert self.client.backoff_period == 0
         assert self.client.client_id is None
+
+    def test_disconnect_second_response(self):
+        self.connect_client()
+        self.client.disconnect()
+        self.transport.receive([
+            Message(
+                channel=ChannelId.META_DISCONNECT,
+                successful=True
+            )
+        ])
+
+    def test_disconnect_with_queued_messages(self):
+        self.client.handshake()
+        mock_message = self.mock_message.copy()
+        self.client.send(mock_message)
+        with self.capture_messages(ChannelId.META_PUBLISH) as messages:
+            self.disconnect_client()
+        assert len(messages) == 1
+        message = messages[0]
+        assert isinstance(message, FailureMessage)
+        assert isinstance(message.exception, errors.StatusError)
+        assert message.exception.status == ClientStatus.DISCONNECTED
+        assert message.request == mock_message
+
+    def test_disconnect_with_properties(self):
+        self.connect_client()
+        self.client.disconnect(properties={'temp': 'dummy'})
+        assert len(self.transport.sent_messages) == 1
+        message = self.transport.sent_messages[0]
+        assert message == {
+            'id': str(self.client.message_id),
+            'channel': ChannelId.META_DISCONNECT,
+            'clientId': self.client.client_id,
+            'temp': 'dummy'
+        }
 
     def test_end_batch(self):
         self.assertRaises(errors.BatchError, self.client.end_batch)
@@ -516,3 +552,30 @@ class TestClient(TestCase):
             assert self.transport.sent_messages == []
         assert not self.client.is_batching
         assert self.transport.sent_messages == [mock_message]
+
+    @contextmanager
+    def capture_messages(self, *channel_ids):
+
+        # Create a listener that logs messages to the list passed in
+        def _receive_message(channel, message, captured_messages):
+            captured_messages.append(message)
+
+        # Add a listener to each requested channel ID
+        listeners = []
+        captured_message_lists = []
+        for channel_id in channel_ids:
+            captured_messages = []
+            channel = self.client.get_channel(channel_id)
+            listener_id = channel.add_listener(_receive_message, captured_messages)
+            listeners.append((channel, listener_id))
+            captured_message_lists.append(captured_messages)
+
+        # Yield to the wrapped functionality, removing the listeners on exit
+        try:
+            if len(captured_message_lists) == 1:
+                yield captured_message_lists[0]
+            else:
+                yield captured_message_lists
+        finally:
+            for channel, listener_id in listeners:
+                channel.remove_listener(id=listener_id)
