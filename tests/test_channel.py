@@ -172,22 +172,36 @@ class TestChannel(TestCase):
         })
 
     def test_remove_listener(self):
+
+        # Add a listener
         mock_listener = self.create_mock_function()
         listener_id = self.channel.add_listener(mock_listener)
+
+        # Check validation of optional arguments
         self.assertRaises(ValueError, self.channel.remove_listener)
         self.assertRaises(ValueError, self.channel.remove_listener, id=listener_id, function=mock_listener)
+
+        # Make sure non-matches are handled correctly
         assert not self.channel.remove_listener(id=listener_id - 1)
         assert not self.channel.remove_listener(function=self.create_mock_function())
+
+        # Test removal by ID
         assert self.channel.remove_listener(id=listener_id)
         self.channel.notify_listeners(self.mock_message)
         assert not mock_listener.called
+
+        # Test removal by function
+        mock_listener_2 = self.create_mock_function()
         self.channel.add_listener(mock_listener)
+        self.channel.add_listener(mock_listener_2)
         self.channel.add_listener(mock_listener)
         self.channel.notify_listeners(self.mock_message)
         assert mock_listener.call_count == 2
+        assert mock_listener_2.call_count == 1
         assert self.channel.remove_listener(function=mock_listener)
         self.channel.notify_listeners(self.mock_message)
         assert mock_listener.call_count == 2
+        assert mock_listener_2.call_count == 2
 
     def test_subscribe(self):
         mock_subscription = self.create_mock_function()
