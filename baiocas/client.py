@@ -763,7 +763,7 @@ class Client(object):
         return bool(unregistered)
 
     def unregister_transport(self, name):
-        tranport = self._transports.remove(name)
+        transport = self._transports.remove(name)
         if not transport:
             self.log.warn('Failed to unregister transport %s, not registered' % name)
             return None
