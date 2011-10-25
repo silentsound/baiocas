@@ -218,17 +218,18 @@ class Client(object):
         self._reset_backoff_period()
         if len(self._message_queue) > 0:
             self.log.debug('Failing queued messages')
-            self._handle_failure(self._message_queue[:], StatusError(self._status))
+            self._handle_failure(self._message_queue[:], errors.StatusError(self._status))
             self._message_queue = []
 
     def _get_next_message_id(self):
         self._message_id += 1
         return self._message_id
 
-    def _handle_connect_failure(self, message):
+    def _handle_connect_failure(self, message, exception):
         self.log.debug('Handling failed connect')
         self._connected = False
         self._notify_connect_failure(FailureMessage.from_message(message,
+            exception=exception,
             advice={
                 FailureMessage.FIELD_RECONNECT: FailureMessage.RECONNECT_RETRY,
                 FailureMessage.FIELD_INTERVAL: self._backoff_period
@@ -255,9 +256,9 @@ class Client(object):
             self.log.info('Client failed to connect')
             self._notify_connect_failure(message)
 
-    def _handle_disconnect_failure(self, message):
+    def _handle_disconnect_failure(self, message, exception):
         self.log.debug('Handling failed disconnect')
-        self._notify_disconnect_failure(FailureMessage.from_message(message))
+        self._notify_disconnect_failure(FailureMessage.from_message(message, exception=exception))
 
     def _handle_disconnect_response(self, message):
         self.log.debug('Handling disconnect response')
@@ -279,11 +280,12 @@ class Client(object):
                 if hasattr(self, handler_name):
                     handler = getattr(self, handler_name)
             self.log.debug('Passing message to handler %s' % handler.__name__)
-            handler(message)
+            handler(message, exception)
 
-    def _handle_handshake_failure(self, message):
+    def _handle_handshake_failure(self, message, exception):
         self.log.debug('Handling failed handshake')
         self._notify_handshake_failure(FailureMessage.from_message(message,
+            exception=exception,
             advice={
                 FailureMessage.FIELD_RECONNECT: FailureMessage.RECONNECT_RETRY,
                 FailureMessage.FIELD_INTERVAL: self._backoff_period
@@ -337,9 +339,9 @@ class Client(object):
         self._internal_batch = False
         self.flush_batch()
 
-    def _handle_message_failure(self, message):
+    def _handle_message_failure(self, message, exception):
         self.log.debug('Handling failed message')
-        self._notify_message_failure(FailureMessage.from_message(message))
+        self._notify_message_failure(FailureMessage.from_message(message, exception=exception))
 
     def _handle_message_response(self, message):
         self.log.debug('Handling message response')
@@ -356,9 +358,9 @@ class Client(object):
             self.log.debug('Client received unsuccessful message')
             self._notify_message_failure(message)
 
-    def _handle_subscribe_failure(self, message):
+    def _handle_subscribe_failure(self, message, exception):
         self.log.debug('Handling failed subscribe')
-        self._notify_subscribe_failure(FailureMessage.from_message(message))
+        self._notify_subscribe_failure(FailureMessage.from_message(message, exception=exception))
 
     def _handle_subscribe_response(self, message):
         self.log.debug('Handling subscribe response')
@@ -370,9 +372,9 @@ class Client(object):
             self.log.info('Client failed to subscribe to channel "%s"' % channel)
             self._notify_subscribe_failure(message)
 
-    def _handle_unsubscribe_failure(self, message):
+    def _handle_unsubscribe_failure(self, message, exception):
         self.log.debug('Handling failed unsubscribe')
-        self._notify_unsubscribe_failure(FailureMessage.from_message(message))
+        self._notify_unsubscribe_failure(FailureMessage.from_message(message, exception=exception))
 
     def _handle_unsubscribe_response(self, message):
         self.log.debug('Handling unsubscribe response')
