@@ -26,11 +26,9 @@ class ActionError(BayeuxError):
     """Raised when an invalid advice action is encountered."""
 
     def __init__(self, action):
-        super(ActionError, self).__init__()
+        message = 'Unrecognized advice action "%s"' % action
+        super(ActionError, self).__init__(message)
         self.action = action
-
-    def __str__(self):
-        return 'Unrecognized advice action "%s"' % self.action
 
 
 class BatchError(BayeuxError):
@@ -41,45 +39,38 @@ class CommunicationError(BayeuxError):
     """Raised when a communication error occurs with a transport."""
 
     def __init__(self, transport_exception):
+        message = 'Communication error: %s' % transport_exception
+        super(CommunicationError, self).__init__(message)
         self.transport_exception = transport_exception
-
-    def __str__(self):
-        return 'Communication error: %s' % self.transport_exception
 
 
 class ConnectionStringError(BayeuxError):
     """Raised when an invalid connection string is encountered."""
 
     def __init__(self, transport, value):
-        super(ConnectionStringError, self).__init__()
+        message = 'Invalid connection string, "%s", for transport %s' % (value, transport)
+        super(ConnectionStringError, self).__init__(message)
         self.transport = transport
         self.value = value
-
-    def __str__(self):
-        return 'Invalid connection string, "%s", for transport %s' % \
-            (self.value, self.transport)
 
 
 class ServerError(BayeuxError):
     """Raised when a server responds with a non-successful status."""
 
     def __init__(self, code, description):
+        message = 'Server responded with error "%s: %s"' % (code, description)
+        super(ServerError, self).__init__(message)
         self.code = code
         self.description = description
-
-    def __str__(self):
-        return 'Server responded with error "%s: %s"' % (self.code, self.description)
 
 
 class StatusError(BayeuxError):
     """Raised when the Bayeux client has an invalid status for an operation."""
 
     def __init__(self, status):
-        super(StatusError, self).__init__()
+        message = 'Client status of "%s" is not valid for this operation' % status
+        super(StatusError, self).__init__(message)
         self.status = status
-
-    def __str__(self):
-        return 'Client status of "%s" is not valid for this operation' % self.status
 
 
 class TimeoutError(BayeuxError):
@@ -90,10 +81,8 @@ class TransportNegotiationError(BayeuxError):
     """Raised when the Bayeux client and server could not agree on a transport."""
 
     def __init__(self, client_types, server_types):
-        super(TransportNegotiationError, self).__init__()
+        message = 'Could not negotiate transport with server; client: %s; server: %s' % \
+            (', '.join(client_types), ', '.join(server_types))
+        super(TransportNegotiationError, self).__init__(message)
         self.client_types = client_types
         self.server_types = server_types
-
-    def __str__(self):
-        return 'Could not negotiate transport with server; client: %s; server: %s' % \
-            (', '.join(self.client_types), ', '.join(self.server_types))
