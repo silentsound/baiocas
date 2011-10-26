@@ -1,5 +1,7 @@
+from collections import defaultdict
 from contextlib import contextmanager
 from mock import Mock, patch
+from twisted.internet.task import Clock
 from twisted.trial.unittest import TestCase
 import logging
 
@@ -84,6 +86,14 @@ class TestClient(TestCase):
         }
     }
 
+    def check_failure_messages(self, messages, expected_messages):
+        if ChannelId.META_UNSUCCESSFUL not in expected_messages:
+            all_messages = sum(expected_messages.values(), [])
+            expected_messages[ChannelId.META_UNSUCCESSFUL] = all_messages
+        assert sorted(messages.keys()) == sorted(expected_messages.keys())
+        for channel_id, channel_messages in expected_messages.iteritems():
+            assert messages[channel_id] == channel_messages
+
     def connect_client(self, client_id='client-1'):
         self.client.handshake()
         self.transport.receive([
@@ -103,6 +113,14 @@ class TestClient(TestCase):
         ])
         self.transport.clear_sent_messages()
 
+    def create_sent_message(self, *args, **kwargs):
+        message = Message(*args, **kwargs)
+        if not message.client_id and self.client.client_id:
+            message.client_id = self.client.client_id
+        if not message.id:
+            message.id = str(self.client.message_id)
+        return message
+
     def create_mock_function(self, name='mock', **kwargs):
         mock = Mock(**kwargs)
         mock.__name__ = name
@@ -119,7 +137,9 @@ class TestClient(TestCase):
         self.transport.clear_sent_messages()
 
     def setUp(self):
+        self.clock = Clock()
         self.client = Client('http://www.example.com')
+        self.client.call_later = self.clock.callLater
         self.transport = MockTransport('mock-transport')
         self.client.register_transport(self.transport)
         self.mock_message = Message(channel='/test', data='dummy')
@@ -237,11 +257,7 @@ class TestClient(TestCase):
         assert self.client.status == ClientStatus.DISCONNECTING
         assert len(self.transport.sent_messages) == 1
         message = self.transport.sent_messages[0]
-        assert message == {
-            'id': str(self.client.message_id),
-            'channel': ChannelId.META_DISCONNECT,
-            'clientId': self.client.client_id
-        }
+        assert message == self.create_sent_message(channel=ChannelId.META_DISCONNECT)
 
         # Make sure we can't attempt to disconnect again during a disconnect
         self.client.disconnect()
@@ -274,26 +290,26 @@ class TestClient(TestCase):
         self.client.handshake()
         mock_message = self.mock_message.copy()
         self.client.send(mock_message)
-        with self.capture_messages(ChannelId.META_PUBLISH) as messages:
+        with self.capture_messages(only_failures=True) as messages:
             self.disconnect_client()
-        assert len(messages) == 1
-        message = messages[0]
-        assert isinstance(message, FailureMessage)
-        assert isinstance(message.exception, errors.StatusError)
-        assert message.exception.status == ClientStatus.DISCONNECTED
-        assert message.request == mock_message
+        self.check_failure_messages(messages, {
+            ChannelId.META_PUBLISH: [
+                FailureMessage.from_message(
+                    mock_message,
+                    exception=errors.StatusError(ClientStatus.DISCONNECTED)
+                )
+            ]
+        })
 
     def test_disconnect_with_properties(self):
         self.connect_client()
         self.client.disconnect(properties={'temp': 'dummy'})
         assert len(self.transport.sent_messages) == 1
         message = self.transport.sent_messages[0]
-        assert message == {
-            'id': str(self.client.message_id),
-            'channel': ChannelId.META_DISCONNECT,
-            'clientId': self.client.client_id,
-            'temp': 'dummy'
-        }
+        assert message == self.create_sent_message(
+            {'temp': 'dummy'},
+            channel=ChannelId.META_DISCONNECT
+        )
 
     def test_end_batch(self):
         self.assertRaises(errors.BatchError, self.client.end_batch)
@@ -305,6 +321,69 @@ class TestClient(TestCase):
             self.client.end_batch()
             assert mock_flush_batch.call_count == 1
         self.assertRaises(errors.BatchError, self.client.end_batch)
+
+    def test_fail_messages(self):
+        self.connect_client()
+        mock_message_1 = self.mock_message.copy()
+        mock_message_2 = self.mock_message.copy()
+        exception = Exception()
+        with self.capture_messages() as messages:
+            self.client.fail_messages([])
+            self.client.fail_messages([mock_message_1])
+            self.client.fail_messages([mock_message_2], exception=exception)
+        self.check_failure_messages(messages, {
+            ChannelId.META_PUBLISH: [
+                FailureMessage.from_message(mock_message_1),
+                FailureMessage.from_message(mock_message_2, exception=exception)
+            ]
+        })
+
+    def test_fail_messages_connect(self):
+        self.connect_client()
+        mock_message_1 = Message(
+            channel=ChannelId.META_CONNECT,
+            client_id=self.client.client_id,
+            connection_type=self.transport.name,
+            advice={Message.FIELD_TIMEOUT: 0}
+        )
+        mock_message_2 = mock_message_1.copy()
+        exception = Exception()
+        with self.capture_messages() as messages:
+            self.client.fail_messages([mock_message_1])
+            self.client.fail_messages([mock_message_2], exception=exception)
+        self.check_failure_messages(messages, {
+            ChannelId.META_CONNECT: [
+                FailureMessage.from_message(
+                    mock_message_1,
+                    advice={
+                        FailureMessage.FIELD_RECONNECT: FailureMessage.RECONNECT_RETRY,
+                        FailureMessage.FIELD_INTERVAL: 0
+                    }
+                ),
+                FailureMessage.from_message(
+                    mock_message_2,
+                    exception=exception,
+                    advice={
+                        FailureMessage.FIELD_RECONNECT: FailureMessage.RECONNECT_RETRY,
+                        FailureMessage.FIELD_INTERVAL: self.DEFAULT_OPTIONS['backoff_period_increment']
+                    }
+                )
+            ]
+        })
+        
+        # Make sure a single delayed connect was scheduled
+        self.transport.clear_sent_messages()
+        assert len(self.clock.getDelayedCalls()) == 1
+        self.clock.advance(self.DEFAULT_OPTIONS['backoff_period_increment'])
+        assert self.transport.sent_messages == [
+            self.create_sent_message(
+                channel=ChannelId.META_CONNECT,
+                connection_type=self.transport.name,
+                advice={
+                    Message.FIELD_TIMEOUT: 0
+                }
+            )
+        ]
 
     def test_fire(self):
 
@@ -341,6 +420,20 @@ class TestClient(TestCase):
             ((self.client, 5, 6, 3,), {'temp': 'dummy', 'foo': 'bar5'}),
             ((self.client, 5, 6), {'temp': 'dummy', 'foo': 'bar4'})
         ]
+
+    def test_flush_batch(self):
+        self.connect_client()
+        self.client.flush_batch()
+        mock_message = self.mock_message.copy()
+        with self.client.batch():
+            self.client.send(mock_message)
+            assert self.transport.sent_messages == []
+            self.client.flush_batch()
+            assert self.transport.sent_messages == [mock_message]
+            self.transport.clear_sent_messages()
+            self.client.flush_batch()
+            assert self.transport.sent_messages == []
+        assert self.transport.sent_messages == []
 
     def test_get_channel(self):
         channel = self.client.get_channel('/test')
@@ -554,28 +647,19 @@ class TestClient(TestCase):
         assert self.transport.sent_messages == [mock_message]
 
     @contextmanager
-    def capture_messages(self, *channel_ids):
+    def capture_messages(self, only_failures=False):
 
-        # Create a listener that logs messages to the list passed in
-        def _receive_message(channel, message, captured_messages):
-            captured_messages.append(message)
-
-        # Add a listener to each requested channel ID
-        listeners = []
-        captured_message_lists = []
-        for channel_id in channel_ids:
-            captured_messages = []
-            channel = self.client.get_channel(channel_id)
-            listener_id = channel.add_listener(_receive_message, captured_messages)
-            listeners.append((channel, listener_id))
-            captured_message_lists.append(captured_messages)
-
-        # Yield to the wrapped functionality, removing the listeners on exit
+        # Create a listener that logs messages keyed by channel for all channels
+        captured_messages = defaultdict(list)
+        skipped_messages = [0]
+        def _receive_message(channel, message):
+            if message.failure or not only_failures:
+                captured_messages[channel.channel_id].append(message)
+        channel = self.client.get_channel('/**')
+        listener_id = channel.add_listener(_receive_message)
+        
+        # Yield to the wrapped functionality, removing the listener on exit
         try:
-            if len(captured_message_lists) == 1:
-                yield captured_message_lists[0]
-            else:
-                yield captured_message_lists
+            yield captured_messages
         finally:
-            for channel, listener_id in listeners:
-                channel.remove_listener(id=listener_id)
+            channel.remove_listener(id=listener_id)
