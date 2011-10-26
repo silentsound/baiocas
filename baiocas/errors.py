@@ -8,6 +8,19 @@ from this class are not raised directly by Baiocas.
 class BayeuxError(Exception):
     """Generic base error class for Baiocas."""
 
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__) or \
+            str(other) != str(self) or \
+            other.args != self.args:
+            return False
+        for name, value in self.__dict__.iteritems():
+            if other.__dict__.get(name) != value:
+                return False
+        return True
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
 class ActionError(BayeuxError):
     """Raised when an invalid advice action is encountered."""

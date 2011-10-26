@@ -20,6 +20,25 @@ class TestBayeuxError(TestCase):
         assert isinstance(exception, errors.BayeuxError)
         assert str(exception) == self.EXPECTED_STRING
 
+    def test_equality(self):
+        exception = self.ERROR_CLASS(*self.ARGS)
+        other_exception = self.ERROR_CLASS(*self.ARGS)
+        assert exception == other_exception
+        other_exception = Exception()
+        assert exception != other_exception
+        other_exception = self.ERROR_CLASS(*self.ARGS)
+        assert exception == other_exception
+        message = str(other_exception)
+        other_exception.__str__ = lambda: message
+        other_exception.args = ('invalid message',)
+        assert exception != other_exception
+        if len(self.ARGS) > 0:
+            other_exception = self.ERROR_CLASS(*self.ARGS)
+            assert exception == other_exception
+            first_key = other_exception.__dict__.keys()[0]
+            other_exception.__dict__[first_key] = 'invalid'
+            assert exception != other_exception
+
 
 class TestActionError(TestBayeuxError):
     
