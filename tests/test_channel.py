@@ -78,7 +78,7 @@ class TestChannel(TestCase):
         mock_listener = self.create_mock_function()
         listener_id = self.channel.add_listener(mock_listener, 1, foo='bar')
         assert not mock_listener.called
-        self.channel.notify_listeners(self.mock_message)
+        self.channel.notify_listeners(self.channel, self.mock_message)
         mock_listener.assert_called_once_with(self.channel, self.mock_message, 1, foo='bar')
         assert self.channel.remove_listener(id=listener_id)
 
@@ -90,7 +90,7 @@ class TestChannel(TestCase):
         self.channel.subscribe(mock_subscription)
         self.channel.clear_listeners()
         assert not self.channel.remove_listener(id=listener_id)
-        self.channel.notify_listeners(self.mock_message)
+        self.channel.notify_listeners(self.channel, self.mock_message)
         assert not mock_listener.called
         mock_subscription.assert_called_once_with(self.channel, self.mock_message)
 
@@ -102,7 +102,7 @@ class TestChannel(TestCase):
         subscription_id = self.channel.subscribe(mock_subscription)
         self.channel.clear_subscriptions()
         assert not self.channel.unsubscribe(id=subscription_id)
-        self.channel.notify_listeners(self.mock_message)
+        self.channel.notify_listeners(self.channel, self.mock_message)
         mock_listener.assert_called_once_with(self.channel, self.mock_message)
         assert not mock_subscription.called
 
@@ -131,7 +131,7 @@ class TestChannel(TestCase):
         self.channel.subscribe(mock_subscription_1, 2, foo='bar2')
         subscription_id = self.channel.subscribe(mock_subscription_2, 3)
         self.channel.subscribe(mock_subscription_3, foo='bar4')
-        self.channel.notify_listeners(self.mock_message)
+        self.channel.notify_listeners(self.channel, self.mock_message)
         mock_listener.assert_called_once_with(self.channel, self.mock_message, 1, foo='bar1')
         mock_subscription_1.assert_called_once_with(self.channel, self.mock_message, 2, foo='bar2')
         mock_subscription_2.assert_called_once_with(self.channel, self.mock_message, 3)
@@ -154,9 +154,19 @@ class TestChannel(TestCase):
         self.mock_message.data = None
         self.channel.add_listener(mock_listener)
         self.channel.subscribe(mock_subscription)
-        self.channel.notify_listeners(self.mock_message)
+        self.channel.notify_listeners(self.channel, self.mock_message)
         mock_listener.assert_called_once_with(self.channel, self.mock_message)
         assert not mock_subscription.called
+
+    def test_notify_listeners_with_other_channel(self):
+        mock_listener = self.create_mock_function()
+        mock_subscription = self.create_mock_function()
+        other_channel = Channel(self.client, '/other')
+        self.channel.add_listener(mock_listener)
+        self.channel.subscribe(mock_subscription)
+        self.channel.notify_listeners(other_channel, self.mock_message)
+        mock_listener.assert_called_once_with(other_channel, self.mock_message)
+        mock_subscription.assert_called_once_with(other_channel, self.mock_message)
 
     def test_publish(self):
         self.channel.publish('dummy')
@@ -187,7 +197,7 @@ class TestChannel(TestCase):
 
         # Test removal by ID
         assert self.channel.remove_listener(id=listener_id)
-        self.channel.notify_listeners(self.mock_message)
+        self.channel.notify_listeners(self.channel, self.mock_message)
         assert not mock_listener.called
 
         # Test removal by function
@@ -195,11 +205,11 @@ class TestChannel(TestCase):
         self.channel.add_listener(mock_listener)
         self.channel.add_listener(mock_listener_2)
         self.channel.add_listener(mock_listener)
-        self.channel.notify_listeners(self.mock_message)
+        self.channel.notify_listeners(self.channel, self.mock_message)
         assert mock_listener.call_count == 2
         assert mock_listener_2.call_count == 1
         assert self.channel.remove_listener(function=mock_listener)
-        self.channel.notify_listeners(self.mock_message)
+        self.channel.notify_listeners(self.channel, self.mock_message)
         assert mock_listener.call_count == 2
         assert mock_listener_2.call_count == 2
 
@@ -212,7 +222,7 @@ class TestChannel(TestCase):
         })
         self.channel.subscribe(mock_subscription)
         assert self.client.send.call_count == 1
-        self.channel.notify_listeners(self.mock_message)
+        self.channel.notify_listeners(self.channel, self.mock_message)
         assert mock_subscription.call_args_list == [
             ((self.channel, self.mock_message, 1), {'foo': 'bar'}),
             ((self.channel, self.mock_message),)
@@ -228,7 +238,7 @@ class TestChannel(TestCase):
             'subscription': self.channel_id,
             'id': '1'
         })
-        self.channel.notify_listeners(self.mock_message)
+        self.channel.notify_listeners(self.channel, self.mock_message)
         mock_subscription.assert_called_once_with(self.channel, self.mock_message, 1, foo='bar')
 
     def test_unsubscribe(self):
@@ -244,16 +254,16 @@ class TestChannel(TestCase):
             'channel': ChannelId.META_UNSUBSCRIBE,
             'subscription': self.channel_id
         })
-        self.channel.notify_listeners(self.mock_message)
+        self.channel.notify_listeners(self.channel, self.mock_message)
         assert not mock_subscription.called
         self.channel.subscribe(mock_subscription)
         self.channel.subscribe(mock_subscription)
         self.client.send.reset_mock()
-        self.channel.notify_listeners(self.mock_message)
+        self.channel.notify_listeners(self.channel, self.mock_message)
         assert mock_subscription.call_count == 2
         assert self.channel.unsubscribe(function=mock_subscription)
         assert self.client.send.call_count == 1
-        self.channel.notify_listeners(self.mock_message)
+        self.channel.notify_listeners(self.channel, self.mock_message)
         assert mock_subscription.call_count == 2
 
     def test_unsubscribe_with_properties(self):
@@ -266,5 +276,5 @@ class TestChannel(TestCase):
             'subscription': self.channel_id,
             'id': '1'
         })
-        self.channel.notify_listeners(self.mock_message)
+        self.channel.notify_listeners(self.channel, self.mock_message)
         assert not mock_subscription.called

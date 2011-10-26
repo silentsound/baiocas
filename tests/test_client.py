@@ -196,8 +196,8 @@ class TestClient(TestCase):
         self.client.clear_subscriptions()
         assert not channel_1.has_subscriptions
         assert not channel_2.has_subscriptions
-        channel_1.notify_listeners(self.mock_message)
-        channel_2.notify_listeners(self.mock_message)
+        channel_1.notify_listeners(channel_1, self.mock_message)
+        channel_2.notify_listeners(channel_2, self.mock_message)
         mock_listener.called_with(channel_1, self.mock_message)
         assert not mock_subscription.called
 

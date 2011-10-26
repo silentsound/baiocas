@@ -54,11 +54,11 @@ class Channel(object):
             (function.__name__, self._channel_id))
         return self._listener_id
 
-    def _notify_listeners(self, listeners, message):
+    def _notify_listeners(self, listeners, channel, message):
         for listener in listeners:
             try:
                 self.log.debug('Notifying listener "%s" of message' % listener.function.__name__)
-                listener.function(self, message, *listener.extra_args, **listener.extra_kwargs)
+                listener.function(channel, message, *listener.extra_args, **listener.extra_kwargs)
             except Exception, ex:
                 self.log.warn('Exception with listener "%s" with %s: %s' % \
                     (listener.function.__name__, message, ex))
@@ -102,10 +102,10 @@ class Channel(object):
     def get_wilds(self):
         return self._channel_id.get_wilds()
 
-    def notify_listeners(self, message):
-        self._notify_listeners(self._listeners, message)
+    def notify_listeners(self, channel, message):
+        self._notify_listeners(self._listeners, channel, message)
         if message.data:
-            self._notify_listeners(self._subscriptions, message)
+            self._notify_listeners(self._subscriptions, channel, message)
 
     def publish(self, data, properties=None):
         self.log.debug('Publishing data to channel: %s' % data)

@@ -494,16 +494,13 @@ class Client(object):
         # Notify direct listeners
         self.log.debug('Notifying listeners for %s' % channel_id)
         channel = self.get_channel(channel_id)
-        channel.notify_listeners(message)
-
-        # Make sure we have a channel Id
-        channel_id = ChannelId.convert(channel_id)
+        channel.notify_listeners(channel, message)
 
         # Notify the wildcard listeners
-        for wild in channel_id.get_wilds():
+        for wild in channel.channel_id.get_wilds():
             self.log.debug('Notifying listeners for %s' % wild)
-            channel = self.get_channel(wild)
-            channel.notify_listeners(message)
+            wild_channel = self.get_channel(wild)
+            wild_channel.notify_listeners(channel, message)
 
     def _notify_message_failure(self, message):
         self.log.debug('Notifying listeners of failed message')
