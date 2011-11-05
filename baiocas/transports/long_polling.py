@@ -1,4 +1,3 @@
-from simplejson import loads
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.web.client import Agent
