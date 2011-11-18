@@ -85,5 +85,5 @@ class HttpTransport(Transport):
             cookies.load(value)
         for cookie in cookies.itervalues():
             cookie.time_received = time_received
-        self._cookies.load(cookies)
+        self._cookies.update(cookies)
         self.log.debug('Updated cookie headers: %s' % values)
