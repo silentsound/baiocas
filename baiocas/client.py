@@ -534,7 +534,7 @@ class Client(object):
             return
         self._update_advice(message.advice)
         handler = self._handle_message_response
-        if message.channel.is_meta:
+        if message.channel and message.channel.is_meta:
             handler_name = '_handle_%s_response' % '_'.join(message.channel.parts[1:])
             self.log.debug('Looking for handler named %s' % handler_name)
             if hasattr(self, handler_name):
