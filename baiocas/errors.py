@@ -57,11 +57,10 @@ class ConnectionStringError(BayeuxError):
 class ServerError(BayeuxError):
     """Raised when a server responds with a non-successful status."""
 
-    def __init__(self, code, description):
-        message = 'Server responded with error "%s: %s"' % (code, description)
+    def __init__(self, code):
+        message = 'Server responded with error %s' % code
         super(ServerError, self).__init__(message)
         self.code = code
-        self.description = description
 
 
 class StatusError(BayeuxError):

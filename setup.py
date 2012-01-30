@@ -21,10 +21,10 @@ setup(
     zip_safe             = False,
     install_requires     = [
         'mock >= 0.7.2',
+        'pycurl >= 7.19.0',
         'pytest >= 2.1.3',
         'simplejson >= 2.2.1',
-        'Twisted >= 10.0.0',
-        'zope.interface >= 3.6.1'
+        'tornado >= 2.1.1'
     ],
     entry_points         = '',
 )

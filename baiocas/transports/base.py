@@ -1,3 +1,4 @@
+from tornado.ioloop import IOLoop
 import logging
 import urlparse
 
@@ -12,8 +13,9 @@ class Transport(object):
 
     OPTION_MAXIMUM_NETWORK_DELAY = 'maximum_network_delay'
 
-    def __init__(self, **options):
+    def __init__(self, io_loop=None, **options):
         self.log = logging.getLogger('%s.%s' % (self.__module__, self.name))
+        self.io_loop = io_loop or IOLoop.instance()
         self._client = None
         self._options = {}
         self.url = None

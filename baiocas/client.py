@@ -1,6 +1,6 @@
 from contextlib import contextmanager
-from twisted.internet import reactor
-from twisted.internet.defer import Deferred
+from datetime import timedelta
+from tornado.ioloop import IOLoop
 import logging
 
 from channel import Channel
@@ -34,13 +34,16 @@ class Client(object):
 
     MINIMUM_BAYEUX_VERSION = '0.9'
 
-    def __init__(self, url, **options):
+    def __init__(self, url, io_loop=None, **options):
 
         # Set up a logger for the client
         self.log = logging.getLogger('%s.%s' % (self.__module__, self.__class__.__name__))
 
         # Save the URL
         self._url = url
+
+        # Use the default IO loop if not provided
+        self.io_loop = io_loop or IOLoop.instance()
 
         # Current client status and connection properties
         self._status = ClientStatus.UNCONNECTED
@@ -151,9 +154,9 @@ class Client(object):
     def _cancel_delayed_send(self):
         if not self._scheduled_send:
             return
-        if not self._scheduled_send.called:
+        if self._scheduled_send.callback:
             self.log.debug('Cancelling delayed send')
-            self._scheduled_send.cancel()
+            self.io_loop.remove_timeout(self._scheduled_send)
         self._scheduled_send = None
 
     def _connect(self):
@@ -202,7 +205,10 @@ class Client(object):
         if delay == 0:
             method(*args, **kwargs)
         else:
-            self._scheduled_send = self.call_later(delay / 1000.0, method, *args, **kwargs)
+            self._scheduled_send = self.io_loop.add_timeout(
+                timedelta(seconds=delay / 1000.0),
+                lambda: method(*args, **kwargs)
+            )
 
     def _disconnect(self, abort=False):
         if self._status == ClientStatus.DISCONNECTED:
@@ -299,6 +305,7 @@ class Client(object):
         if not message.successful:
             self.log.info('Client failed to handshake')
             self._notify_handshake_failure(message)
+            return
 
         # Save the client ID
         self.log.info('Handshake successful, client ID = %s' % message.client_id)
@@ -597,9 +604,6 @@ class Client(object):
             self._advice = advice
             self.log.debug('New advice: %s' % self._advice)
 
-    # Map reactor.callLater so that we can replace it during testing
-    call_later = reactor.callLater
-
     def clear_subscriptions(self):
         self.log.info('Clearing subscriptions')
         for channel in self._channels.itervalues():
@@ -774,15 +778,6 @@ class Client(object):
         transport.unregister()
         return transport
 
-    def wait_for_message(self, channel_id, successful_only=False):
-        channel = self.get_channel(channel_id)
-        wait_for_message = Deferred()
-        def _receive_message(channel, message):
-            if not successful_only or message.successful:
-                wait_for_message.callback(None)
-        channel.add_listener(_receive_message)
-        return wait_for_message
-
     @contextmanager
     def batch(self):
         self.log.debug('Entered batch context manager')
@@ -795,7 +790,7 @@ class Client(object):
             self.log.debug('Exited batch context manager')
 
 
-def get_client(url, **options):
-    client = Client(url, **options)
-    client.register_transport(LongPollingHttpTransport())
+def get_client(url, io_loop=None, **options):
+    client = Client(url, io_loop=io_loop, **options)
+    client.register_transport(LongPollingHttpTransport(io_loop=io_loop))
     return client
