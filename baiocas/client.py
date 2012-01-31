@@ -244,13 +244,14 @@ class Client(object):
 
     def _handle_connect_response(self, message):
         self.log.debug('Handling connect response')
+        if self.is_disconnected:
+            self.log.debug('Client disconnected, discarding connect response')
+            return
         self._connected = message.successful
         if self._connected:
             self.log.info('Client is now connected')
             self._notify_listeners(ChannelId.META_CONNECT, message)
             action = self._advice[Message.FIELD_RECONNECT]
-            if self.is_disconnected:
-                action = Message.RECONNECT_NONE
             if action == Message.RECONNECT_RETRY:
                 self._reset_backoff_period()
                 self._delay_connect()
