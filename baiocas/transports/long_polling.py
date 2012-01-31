@@ -85,6 +85,7 @@ class LongPollingHttpTransport(HttpTransport):
 
         # Get the timeout (in seconds)
         timeout = self.get_timeout(messages) / 1000.0
+        self.log.debug('Request timeout: %ss' % timeout)
 
         # Build and return the request
         return HTTPRequest(
