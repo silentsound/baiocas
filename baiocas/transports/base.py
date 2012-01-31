@@ -67,7 +67,10 @@ class Transport(object):
             self.DEFAULT_MAXIMUM_NETWORK_DELAY
         )
         if len(messages) == 1 and messages[0].channel == ChannelId.META_CONNECT:
-            timeout += (messages[0].advice or {}).get(Message.FIELD_TIMEOUT, 0)
+            advice = messages[0].advice
+            if not advice or Message.FIELD_TIMEOUT not in advice:
+                advice = self._client.advice
+            timeout += advice[Message.FIELD_TIMEOUT]
         return timeout
 
     def register(self, client, url=None):
