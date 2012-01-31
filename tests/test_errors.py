@@ -88,10 +88,10 @@ class TestServerError(TestBayeuxError):
     ERROR_CLASS = errors.ServerError
 
     # Arguments to pass when creating an instance of the error
-    ARGS = (402, 'Unauthorized Client')
+    ARGS = (402,)
 
     # The expected string representation of the class
-    EXPECTED_STRING = 'Server responded with error "402: Unauthorized Client"'
+    EXPECTED_STRING = 'Server responded with error 402'
 
 
 class TestStatusError(TestBayeuxError):

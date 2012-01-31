@@ -1,16 +1,18 @@
 from collections import defaultdict
-from contextlib import contextmanager
+from contextlib import contextmanager, nested
+from datetime import timedelta
 from mock import Mock, patch
-from twisted.internet.task import Clock
-from twisted.trial.unittest import TestCase
+from tornado.ioloop import IOLoop
+from tornado.testing import AsyncTestCase
 import logging
 
 from baiocas import errors
 from baiocas.channel_id import ChannelId
 from baiocas.client import Client
 from baiocas.extensions.base import Extension
-from baiocas.status import ClientStatus
+from baiocas.lib.namedtuple import namedtuple
 from baiocas.message import FailureMessage, Message
+from baiocas.status import ClientStatus
 from baiocas.transports.base import Transport
 
 
@@ -73,7 +75,7 @@ class MockTransport(Transport):
         self.sent_messages += messages
 
 
-class TestClient(TestCase):
+class TestClient(AsyncTestCase):
 
     DEFAULT_OPTIONS = {
         'backoff_period_increment': 1000,
@@ -137,9 +139,8 @@ class TestClient(TestCase):
         self.transport.clear_sent_messages()
 
     def setUp(self):
-        self.clock = Clock()
-        self.client = Client('http://www.example.com')
-        self.client.call_later = self.clock.callLater
+        self.io_loop = self.get_new_ioloop()
+        self.client = Client('http://www.example.com', io_loop=self.io_loop)
         self.transport = MockTransport('mock-transport')
         self.client.register_transport(self.transport)
         self.mock_message = Message(channel='/test', data='dummy')
@@ -348,7 +349,10 @@ class TestClient(TestCase):
         )
         mock_message_2 = mock_message_1.copy()
         exception = Exception()
-        with self.capture_messages() as messages:
+        with nested(
+            self.capture_messages(),
+            self.capture_timeouts()
+        ) as (messages, timeouts):
             self.client.fail_messages([mock_message_1])
             self.client.fail_messages([mock_message_2], exception=exception)
         self.check_failure_messages(messages, {
@@ -373,8 +377,11 @@ class TestClient(TestCase):
         
         # Make sure a single delayed connect was scheduled
         self.transport.clear_sent_messages()
-        assert len(self.clock.getDelayedCalls()) == 1
-        self.clock.advance(self.DEFAULT_OPTIONS['backoff_period_increment'])
+        assert len(timeouts) == 1
+        assert timeouts[0].deadline == timedelta(
+            milliseconds=self.DEFAULT_OPTIONS['backoff_period_increment'] * 2
+        )
+        timeouts[0].callback()
         assert self.transport.sent_messages == [
             self.create_sent_message(
                 channel=ChannelId.META_CONNECT,
@@ -663,3 +670,42 @@ class TestClient(TestCase):
             yield captured_messages
         finally:
             channel.remove_listener(id=listener_id)
+
+    @contextmanager
+    def capture_timeouts(self):
+
+        # Keep track of the timeouts
+        timeouts = []
+
+        # Create add/remove_timeout methods that update the timeouts list. We
+        # don't log the timeout references directly because the deadline on
+        # those gets converted and the class is private to Tornado.
+        def _add_timeout(deadline, callback):
+            timeout = IOLoop.add_timeout(self.io_loop, deadline, callback)
+            timeouts.append(Timeout(
+                callback=callback,
+                deadline=deadline,
+                reference=timeout
+            ))
+            return timeout
+        def _remove_timeout(reference):
+            IOLoop.remove_timeout(self.io_loop, reference)
+            for index, timeout in enumerate(timeouts):
+                if timeout.reference == reference:
+                    del timeouts[index]
+                    break
+
+        # Grab all calls to add_timeout/remove_timeout
+        with nested(
+            patch.object(self.io_loop, 'add_timeout'),
+            patch.object(self.io_loop, 'remove_timeout', mocksignature=True)
+        ) as (mock_add_timeout, mock_remove_timeout):
+            mock_add_timeout.side_effect = _add_timeout
+            mock_remove_timeout.side_effect = _remove_timeout
+            yield timeouts
+
+
+# Class for timeouts scheduled with the I/O event loop. We don't use Tornado's
+# instance directly since the deadline is converted to a timestamp and, more
+# importantly, the class itself is marked as a private implementation detail.
+Timeout = namedtuple('Timeout', 'callback, deadline, reference')
