@@ -53,8 +53,9 @@ class TestNamedTuple(TestCase):
     def test_module_update(self):
         Temp = namedtuple.namedtuple('Temp', 'foo')
         assert Temp.__module__ == self.__module__
-        with patch.object(namedtuple._sys, '_getframe', mock_signature=True) as mock_get_frame:
-            mock_get_frame.side_effect = AttributeError()
+        with patch.object(namedtuple, '_sys') as mock_sys:
+            mock_sys.wraps = sys
+            mock_sys._getframe.side_effect = AttributeError()
             Temp = namedtuple.namedtuple('Temp', 'foo')
         assert Temp.__module__ == 'namedtuple_Temp'
 
