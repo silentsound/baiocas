@@ -554,7 +554,7 @@ class Client(object):
         self.log.debug('Resetting backoff period to 0')
         self._backoff_period = 0
 
-    def _send(self, messages, for_setup=False):
+    def _send(self, messages, for_setup=False, sync=False):
 
         # Make sure we got a list of messages
         if not isinstance(messages, (list, tuple)):
@@ -589,7 +589,7 @@ class Client(object):
 
         # Pass off the messages to the transport
         self.log.debug('Prepared messages: %s' % prepared_messages)
-        self._transport.send(prepared_messages)
+        self._transport.send(prepared_messages, sync=sync)
         return True
 
     def _set_status(self, status):
@@ -616,14 +616,14 @@ class Client(object):
         self._options.update(options)
         self.log.debug('Options changed to: %s' % self._options)
 
-    def disconnect(self, properties=None):
+    def disconnect(self, properties=None, sync=True):
         if self.is_disconnected:
             self.log.debug('Client already disconnected, skipping disconnect')
             return
         message = Message(properties, channel=ChannelId.META_DISCONNECT)
         self.log.debug('Sending disconnect: %s' % message)
         self._set_status(ClientStatus.DISCONNECTING)
-        self._send(message, for_setup=True)
+        self._send(message, for_setup=True, sync=sync)
 
     def end_batch(self):
         if self._batch_id == 0:

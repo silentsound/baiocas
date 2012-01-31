@@ -1,6 +1,6 @@
 from tornado import gen
 from tornado.curl_httpclient import CurlAsyncHTTPClient
-from tornado.httpclient import HTTPError, HTTPRequest
+from tornado.httpclient import HTTPClient, HTTPError, HTTPRequest
 from tornado.httputil import HTTPHeaders
 
 from baiocas import errors
@@ -13,14 +13,22 @@ class LongPollingHttpTransport(HttpTransport):
     def __init__(self, *args, **kwargs):
         super(LongPollingHttpTransport, self).__init__(*args, **kwargs)
         self._append_message_type = False
-        self._create_http_client()
+        self._create_http_clients()
 
     @property
     def name(self):
         return 'long-polling'
 
-    def _create_http_client(self):
+    def _reset_http_clients(self):
+        self._http_client.close()
+        self._blocking_http_client.close()
+        self._create_http_clients()
+
+    def _create_http_clients(self):
         self._http_client = CurlAsyncHTTPClient(io_loop=self.io_loop)
+        self._blocking_http_client = HTTPClient(
+            async_client_class=CurlAsyncHTTPClient
+        )
 
     def _handle_response(self, response, messages):
 
@@ -100,15 +108,20 @@ class LongPollingHttpTransport(HttpTransport):
     def abort(self):
         super(LongPollingHttpTransport, self).abort()
         self.log.debug('Cancelling pending requests')
-        self._http_client.close()
-        self._create_http_client()
+        self._reset_http_clients()
 
     def accept(self, bayeux_version):
         return True
 
     @gen.engine
-    def send(self, messages):
+    def send(self, messages, sync=False):
         request = self._prepare_request(messages)
         self.log.debug('Sending message to %s' % request.url)
-        response = yield gen.Task(self._http_client.fetch, request)
+        if sync:
+            try:
+                response = self._blocking_http_client.fetch(request)
+            except HTTPError:
+                pass
+        else:
+            response = yield gen.Task(self._http_client.fetch, request)
         self._handle_response(response, messages)

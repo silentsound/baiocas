@@ -24,7 +24,7 @@ setup(
         'pycurl >= 7.19.0',
         'pytest >= 2.1.3',
         'simplejson >= 2.2.1',
-        'tornado >= 2.1.1'
+        'tornado >= 2.2.0'
     ],
     entry_points         = '',
 )

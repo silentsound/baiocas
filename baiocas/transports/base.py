@@ -78,7 +78,7 @@ class Transport(object):
     def reset(self):
         self.log.debug('Transport reset')
 
-    def send(self, messages):
+    def send(self, messages, sync=False):
         raise NotImplementedError('Must be implemented by child classes')
 
     def unregister(self):
