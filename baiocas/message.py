@@ -1,6 +1,6 @@
 from simplejson import dumps, loads
 
-from channel_id import ChannelId
+from baiocas.channel_id import ChannelId
 
 
 class Message(dict):

@@ -1,6 +1,6 @@
 from email.utils import formatdate
 
-from base import Extension
+from baiocas.extensions.base import Extension
 
 
 class TimestampExtension(Extension):

@@ -1,6 +1,6 @@
 import signal
 
-from namedtuple import namedtuple
+from baiocas.lib.namedtuple import namedtuple
 
 
 # Keep track of whether we've already registered the signal handlers

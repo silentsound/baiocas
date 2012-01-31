@@ -1,8 +1,8 @@
 import logging
 
-from channel_id import ChannelId
-from listener import Listener
-from message import Message
+from baiocas.channel_id import ChannelId
+from baiocas.listener import Listener
+from baiocas.message import Message
 
 
 class Channel(object):

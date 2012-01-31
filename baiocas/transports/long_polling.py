@@ -3,9 +3,9 @@ from tornado.curl_httpclient import CurlAsyncHTTPClient
 from tornado.httpclient import HTTPError, HTTPRequest
 from tornado.httputil import HTTPHeaders
 
-from .. import errors
-from ..message import Message
-from http import HttpTransport
+from baiocas import errors
+from baiocas.message import Message
+from baiocas.transports.http import HttpTransport
 
 
 class LongPollingHttpTransport(HttpTransport):

@@ -3,14 +3,14 @@ from datetime import timedelta
 from tornado.ioloop import IOLoop
 import logging
 
-from channel import Channel
-from channel_id import ChannelId
-from listener import Listener
-from message import FailureMessage, Message
-from status import ClientStatus
-from transports.long_polling import LongPollingHttpTransport
-from transports.registry import TransportRegistry
-import errors
+from baiocas import errors
+from baiocas.channel import Channel
+from baiocas.channel_id import ChannelId
+from baiocas.listener import Listener
+from baiocas.message import FailureMessage, Message
+from baiocas.status import ClientStatus
+from baiocas.transports.long_polling import LongPollingHttpTransport
+from baiocas.transports.registry import TransportRegistry
 
 
 class Client(object):

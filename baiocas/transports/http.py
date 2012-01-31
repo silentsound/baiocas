@@ -2,8 +2,8 @@ from email.utils import mktime_tz, parsedate_tz
 import Cookie
 import time
 
-from base import Transport
-from util import is_cookie_expired
+from baiocas.transports.base import Transport
+from baiocas.transports.util import is_cookie_expired
 
 
 class HttpTransport(Transport):

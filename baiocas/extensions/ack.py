@@ -1,6 +1,5 @@
-from base import Extension
-
-from ..channel_id import ChannelId
+from baiocas.channel_id import ChannelId
+from baiocas.extensions.base import Extension
 
 
 class AckExtension(Extension):

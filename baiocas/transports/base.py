@@ -2,9 +2,9 @@ from tornado.ioloop import IOLoop
 import logging
 import urlparse
 
-from .. import errors
-from ..channel_id import ChannelId
-from ..message import Message
+from baiocas import errors
+from baiocas.channel_id import ChannelId
+from baiocas.message import Message
 
 
 class Transport(object):
