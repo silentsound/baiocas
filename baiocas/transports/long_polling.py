@@ -118,13 +118,15 @@ class LongPollingHttpTransport(HttpTransport):
     def send(self, messages, sync=False):
         request = self._prepare_request(messages)
 
-        # Send the message
+        # Send the message. For synchronous requests, the Tornado client doesn't
+        # return the actual response object if there is an error even though it
+        # generates it internally. Instead of recreating it, we'll grab it.
         self.log.debug('Sending message to %s' % request.url)
         if sync:
             try:
                 response = self._blocking_http_client.fetch(request)
             except HTTPError:
-                pass
+                response = self._blocking_http_client._response
         else:
             response = yield gen.Task(self._http_client.fetch, request)
 
