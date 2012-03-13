@@ -117,6 +117,8 @@ class LongPollingHttpTransport(HttpTransport):
     @gen.engine
     def send(self, messages, sync=False):
         request = self._prepare_request(messages)
+
+        # Send the message
         self.log.debug('Sending message to %s' % request.url)
         if sync:
             try:
@@ -125,4 +127,12 @@ class LongPollingHttpTransport(HttpTransport):
                 pass
         else:
             response = yield gen.Task(self._http_client.fetch, request)
-        self._handle_response(response, messages)
+
+        # Handle the response. We catch all exceptions here so that a bad
+        # response doesn't end up crashing the Tornado async framework.
+        try:
+            self._handle_response(response, messages)
+        except Exception, ex:
+            error = errors.CommunicationError(ex)
+            self.log.debug('Exception handling response: %s' % error)
+            self._client.fail_messages(messages, error)
