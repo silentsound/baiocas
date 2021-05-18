@@ -1,6 +1,6 @@
 from setuptools import setup, Command, find_packages
 
-version = '0.1.0'
+version = '1.0.0'
 
 #
 # call setup
@@ -27,4 +27,5 @@ setup(
         'tornado >= 2.2.0'
     ],
     entry_points         = '',
+    python_requires='>=3.7',
 )

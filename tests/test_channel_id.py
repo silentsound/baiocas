@@ -21,20 +21,20 @@ class TestChannelId(TestCase):
         assert channel_id == '/test'
 
     def test_new_with_encoding(self):
-        channel_id = ChannelId('/caf\xc3\xa9', encoding='utf8')
-        assert channel_id == u'/caf\xe9'
+        channel_id = ChannelId(b'/caf\xc3\xa9', encoding='utf8')
+        assert channel_id == '/caf\xe9'
 
     def test_new_with_errors(self):
-        self.assertRaises(UnicodeDecodeError, ChannelId, '/caf\xc3', encoding='utf8')
-        channel_id = ChannelId('/caf\xc3', encoding='utf8', errors='ignore')
+        self.assertRaises(UnicodeDecodeError, ChannelId, b'/caf\xc3', encoding='utf8')
+        channel_id = ChannelId(b'/caf\xc3', encoding='utf8', errors='ignore')
         assert channel_id == '/caf'
-        channel_id = ChannelId('/caf\xc3', encoding='utf8', errors='replace')
-        assert channel_id == u'/caf\ufffd'
+        channel_id = ChannelId(b'/caf\xc3', encoding='utf8', errors='replace')
+        assert channel_id == '/caf\ufffd'
 
     def test_equal(self):
         channel_id = ChannelId('/test')
         assert channel_id == '/test'
-        assert channel_id == u'/test'
+        assert channel_id == '/test'
         assert not channel_id == '/Test'
         assert channel_id == ChannelId('/test')
         self.assertRaises(TypeError, channel_id.__eq__, 0)

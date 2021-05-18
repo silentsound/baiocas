@@ -35,7 +35,7 @@ class TestBayeuxError(TestCase):
         if len(self.ARGS) > 0:
             other_exception = self.ERROR_CLASS(*self.ARGS)
             assert exception == other_exception
-            first_key = other_exception.__dict__.keys()[0]
+            first_key = list(other_exception.__dict__.keys())[0]
             other_exception.__dict__[first_key] = 'invalid'
             assert exception != other_exception
 

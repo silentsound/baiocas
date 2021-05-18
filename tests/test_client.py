@@ -1,5 +1,6 @@
 from collections import defaultdict
-from contextlib import contextmanager, nested
+from collections import namedtuple
+from contextlib import contextmanager
 from datetime import timedelta
 from mock import Mock, patch
 from tornado.ioloop import IOLoop
@@ -10,10 +11,24 @@ from baiocas import errors
 from baiocas.channel_id import ChannelId
 from baiocas.client import Client
 from baiocas.extensions.base import Extension
-from baiocas.lib.namedtuple import namedtuple
 from baiocas.message import FailureMessage, Message
 from baiocas.status import ClientStatus
 from baiocas.transports.base import Transport
+
+
+try:
+    from contextlib import nested  # Python 2
+except ImportError:
+    from contextlib import ExitStack
+
+    @contextmanager
+    def nested(*contexts):
+        with ExitStack() as stack:
+            results = [
+                stack.enter_context(ctx)
+                for ctx in contexts
+            ]
+            yield results
 
 
 class MockExtension(Extension):
@@ -66,12 +81,12 @@ class MockTransport(Transport):
 
     def receive(self, messages):
         for message in messages:
-            print 'Receive: %s' % message
+            print(('Receive: %s' % message))
         self._client.receive_messages(messages)
 
-    def send(self, messages):
+    def send(self, messages, sync=False):
         for message in messages:
-            print 'Send: %s' % message
+            print(('Send: %s' % message))
         self.sent_messages += messages
 
 
@@ -90,10 +105,10 @@ class TestClient(AsyncTestCase):
 
     def check_failure_messages(self, messages, expected_messages):
         if ChannelId.META_UNSUCCESSFUL not in expected_messages:
-            all_messages = sum(expected_messages.values(), [])
+            all_messages = sum(list(expected_messages.values()), [])
             expected_messages[ChannelId.META_UNSUCCESSFUL] = all_messages
         assert sorted(messages.keys()) == sorted(expected_messages.keys())
-        for channel_id, channel_messages in expected_messages.iteritems():
+        for channel_id, channel_messages in list(expected_messages.items()):
             assert messages[channel_id] == channel_messages
 
     def connect_client(self, client_id='client-1'):
@@ -355,6 +370,7 @@ class TestClient(AsyncTestCase):
         ) as (messages, timeouts):
             self.client.fail_messages([mock_message_1])
             self.client.fail_messages([mock_message_2], exception=exception)
+
         self.check_failure_messages(messages, {
             ChannelId.META_CONNECT: [
                 FailureMessage.from_message(

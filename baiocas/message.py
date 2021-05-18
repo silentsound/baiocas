@@ -50,9 +50,9 @@ class Message(dict):
     RECONNECT_RETRY = 'retry'
 
     def __init__(self, *args, **kwargs):
-        for arg in filter(None, args):
+        for arg in [_f for _f in args if _f]:
             self.update(arg)
-        for key, value in kwargs.iteritems():
+        for key, value in kwargs.items():
             setattr(self, key, value)
 
     def __getattr__(self, name):
@@ -108,7 +108,7 @@ class Message(dict):
         messages = loads(value)
         if not isinstance(messages, (list, tuple)):
             messages = [messages]
-        return map(cls.from_dict, messages)
+        return list(map(cls.from_dict, messages))
 
     @classmethod
     def to_json(cls, messages, encoding=None):

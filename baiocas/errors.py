@@ -13,7 +13,7 @@ class BayeuxError(Exception):
             str(other) != str(self) or \
             other.args != self.args:
             return False
-        for name, value in self.__dict__.iteritems():
+        for name, value in self.__dict__.items():
             if other.__dict__.get(name) != value:
                 return False
         return True

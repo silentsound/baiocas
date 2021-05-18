@@ -1,6 +1,6 @@
 from tornado.ioloop import IOLoop
 import logging
-import urlparse
+import urllib.parse
 
 from baiocas import errors
 from baiocas.channel_id import ChannelId
@@ -40,7 +40,7 @@ class Transport(object):
         return self._url
 
     def _set_url(self, url):
-        parsed_url = urlparse.urlparse(url or '')
+        parsed_url = urllib.parse.urlparse(url or '')
         if url is not None:
             if not parsed_url.hostname:
                 raise errors.ConnectionStringError(url, self)

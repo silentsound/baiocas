@@ -10,11 +10,11 @@ class TransportRegistry(object):
         return True
 
     def find_transports(self, version):
-        return [transport.name for transport in self._transports.values()
+        return [transport.name for transport in list(self._transports.values())
             if transport.accept(version)]
 
     def get_known_transports(self):
-        return self._transports.keys()
+        return list(self._transports.keys())
 
     def get_transport(self, name):
         return self._transports.get(name)
@@ -35,5 +35,5 @@ class TransportRegistry(object):
         return transport
 
     def reset(self):
-        for transport in self._transports.values():
+        for transport in list(self._transports.values()):
             transport.reset()

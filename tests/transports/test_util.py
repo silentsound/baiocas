@@ -1,4 +1,4 @@
-from Cookie import Morsel
+from http.cookies import Morsel
 from email.utils import formatdate
 from unittest import TestCase
 import time

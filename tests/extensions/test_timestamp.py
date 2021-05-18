@@ -1,4 +1,4 @@
-from __future__ import with_statement
+
 from email.utils import formatdate
 from mock import patch
 from unittest import TestCase

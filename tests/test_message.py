@@ -156,7 +156,7 @@ class TestMessage(TestCase):
             assert isinstance(message, Message)
 
     def test_from_json_with_encoding(self):
-        expected = [{'channel': u'/caf\xe9', 'id': '1'}]
+        expected = [{'channel': '/caf\xe9', 'id': '1'}]
         value = dumps(expected, ensure_ascii=False).encode('utf8')
         messages = Message.from_json(value, encoding='utf8')
         assert messages == expected
@@ -174,7 +174,7 @@ class TestMessage(TestCase):
         assert Message.to_json(messages) == dumps(messages)
 
     def test_to_json_with_encoding(self):
-        message = Message(channel=u'/caf\xe9', id='1')
+        message = Message(channel='/caf\xe9', id='1')
         value = dumps([message], ensure_ascii=False).encode('utf8')
         assert Message.to_json(message, encoding='utf8') == value
 
