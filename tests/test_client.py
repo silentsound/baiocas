@@ -74,7 +74,7 @@ class MockTransport(Transport):
     def accept(self, bayeux_version):
         if self.__only_versions is None:
             return True
-        return version in self.__only_versions
+        return bayeux_version in self.__only_versions
 
     def clear_sent_messages(self):
         self.sent_messages = []
