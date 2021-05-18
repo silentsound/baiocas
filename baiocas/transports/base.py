@@ -1,6 +1,10 @@
-from tornado.ioloop import IOLoop
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
 import logging
 import urllib.parse
+
+from tornado.ioloop import IOLoop
 
 from baiocas import errors
 from baiocas.channel_id import ChannelId

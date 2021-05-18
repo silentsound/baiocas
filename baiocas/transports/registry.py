@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
+
 class TransportRegistry(object):
 
     def __init__(self):
@@ -11,7 +15,7 @@ class TransportRegistry(object):
 
     def find_transports(self, version):
         return [transport.name for transport in list(self._transports.values())
-            if transport.accept(version)]
+                if transport.accept(version)]
 
     def get_known_transports(self):
         return list(self._transports.keys())

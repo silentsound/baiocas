@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
 import logging
 
 from baiocas.channel_id import ChannelId
@@ -50,8 +53,8 @@ class Channel(object):
             extra_args=extra_args,
             extra_kwargs=extra_kwargs
         ))
-        self.log.debug('Added listener "%s" for channel %s' % \
-            (function.__name__, self._channel_id))
+        self.log.debug('Added listener "%s" for channel %s' %
+                       (function.__name__, self._channel_id))
         return self._listener_id
 
     def _notify_listeners(self, listeners, channel, message):
@@ -60,8 +63,8 @@ class Channel(object):
                 self.log.debug('Notifying listener "%s" of message' % listener.function.__name__)
                 listener.function(channel, message, *listener.extra_args, **listener.extra_kwargs)
             except Exception as ex:
-                self.log.warn('Exception with listener "%s" with %s: %s' % \
-                    (listener.function.__name__, message, ex))
+                self.log.warn('Exception with listener "%s" with %s: %s' %
+                              (listener.function.__name__, message, ex))
                 self._client.fire(self._client.EVENT_LISTENER_EXCEPTION, listener, message, ex)
 
     def _remove_listener(self, listeners, id=None, function=None):
@@ -84,8 +87,8 @@ class Channel(object):
                 del listeners[index]
             success = bool(to_remove)
         if success:
-            self.log.debug('Removed listener(s) "%s" for channel %s' % \
-                (function.__name__, self._channel_id))
+            self.log.debug('Removed listener(s) "%s" for channel %s' %
+                           (function.__name__, self._channel_id))
         return success
 
     def add_listener(self, function, *extra_args, **extra_kwargs):
@@ -122,9 +125,9 @@ class Channel(object):
         if not self.has_subscriptions:
             self.log.debug('Subscribe to channel "%s"' % self._channel_id)
             message = Message(properties,
-                channel=ChannelId.META_SUBSCRIBE,
-                subscription=self._channel_id
-            )
+                              channel=ChannelId.META_SUBSCRIBE,
+                              subscription=self._channel_id
+                              )
             self._client.send(message)
         return self._add_listener(self._subscriptions, function, extra_args, extra_kwargs)
 
@@ -133,8 +136,8 @@ class Channel(object):
         if not self.has_subscriptions:
             self.log.debug('Channel has no remaining subscriptions, sending unsubscribe')
             message = Message(properties,
-                channel=ChannelId.META_UNSUBSCRIBE,
-                subscription=self._channel_id
-            )
+                              channel=ChannelId.META_UNSUBSCRIBE,
+                              subscription=self._channel_id
+                              )
             self._client.send(message)
         return success

@@ -1,9 +1,12 @@
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
 import sys
 
 
 class ModuleMask(object):
     """Inspired by this Stack Overflow post: http://bit.ly/oxl7Ft."""
-    
+
     def __init__(self, *modules):
         self.modules = modules
         self.register()

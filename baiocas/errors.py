@@ -4,14 +4,17 @@ Exceptions used with Baiocas.
 All exceptions inherit from :class:`.BayeuxError`. Exceptions not inheriting
 from this class are not raised directly by Baiocas.
 """
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
 
 class BayeuxError(Exception):
     """Generic base error class for Baiocas."""
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__) or \
-            str(other) != str(self) or \
-            other.args != self.args:
+                str(other) != str(self) or \
+                other.args != self.args:
             return False
         for name, value in self.__dict__.items():
             if other.__dict__.get(name) != value:

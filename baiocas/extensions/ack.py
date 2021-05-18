@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
 from baiocas.channel_id import ChannelId
 from baiocas.extensions.base import Extension
 
