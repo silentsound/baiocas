@@ -73,7 +73,7 @@ class LongPollingHttpTransport(HttpTransport):
 
         # Get the headers for the request
         headers = HTTPHeaders()
-        for header, values in self.get_headers().iteritems():
+        for header, values in self.get_headers().items():
             for value in values:
                 headers.add(header, value)
         for header, value in headers.get_all():
@@ -134,7 +134,7 @@ class LongPollingHttpTransport(HttpTransport):
         # response doesn't end up crashing the Tornado async framework.
         try:
             self._handle_response(response, messages)
-        except Exception, ex:
+        except Exception as ex:
             error = errors.CommunicationError(ex)
             self.log.debug('Exception handling response: %s' % error)
             self._client.fail_messages(messages, error)

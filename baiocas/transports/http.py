@@ -1,5 +1,5 @@
 from email.utils import mktime_tz, parsedate_tz
-import Cookie
+import http.cookies
 import time
 
 from baiocas.transports.base import Transport
@@ -16,7 +16,7 @@ class HttpTransport(Transport):
 
     def __init__(self, *args, **kwargs):
         super(HttpTransport, self).__init__(*args, **kwargs)
-        self._cookies = Cookie.SimpleCookie()
+        self._cookies = http.cookies.SimpleCookie()
 
     def add_header(self, name, value):
         headers = self._options.setdefault(self.OPTION_HEADERS, {})
@@ -25,7 +25,7 @@ class HttpTransport(Transport):
     def configure(self, **options):
         if self.OPTION_HEADERS in options:
             headers = dict((name.lower(), values) for name, values 
-                in options[self.OPTION_HEADERS].iteritems())
+                in options[self.OPTION_HEADERS].items())
             options[self.OPTION_HEADERS] = headers
         super(HttpTransport, self).configure(**options)
 
@@ -72,10 +72,10 @@ class HttpTransport(Transport):
         headers[name.lower()] = values
 
     def update_cookies(self, values, time_received=None):
-        cookies = Cookie.SimpleCookie()
+        cookies = http.cookies.SimpleCookie()
         if isinstance(time_received, (list, tuple)):
             time_received = time_received[0] if time_received else None
-        if isinstance(time_received, basestring):
+        if isinstance(time_received, str):
             time_received = parsedate_tz(time_received)
             if time_received:
                 time_received = mktime_tz(time_received)
@@ -83,7 +83,7 @@ class HttpTransport(Transport):
             time_received = time.time()
         for value in values:
             cookies.load(value)
-        for cookie in cookies.itervalues():
+        for cookie in cookies.values():
             cookie.time_received = time_received
         self._cookies.update(cookies)
         self.log.debug('Updated cookie headers: %s' % values)

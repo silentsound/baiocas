@@ -124,7 +124,7 @@ class Client(object):
             self.log.debug('Applying extension %s to message' % extension)
             method = outgoing and 'send' or 'receive'
             return getattr(extension, method)(message)
-        except Exception, ex:
+        except Exception as ex:
             self.log.warn('Exception during execution of extension %s: %s' % \
                 (extension, ex))
             self.fire(self.EVENT_EXTENSION_EXCEPTION, message, ex, outgoing=outgoing)
@@ -607,7 +607,7 @@ class Client(object):
 
     def clear_subscriptions(self):
         self.log.info('Clearing subscriptions')
-        for channel in self._channels.itervalues():
+        for channel in self._channels.values():
             channel.clear_subscriptions()
 
     def configure(self, **options):
@@ -651,7 +651,7 @@ class Client(object):
                     final_kwargs = final_kwargs.copy()
                     final_kwargs.update(listener.extra_kwargs)
                 listener.function(self, *final_args, **final_kwargs)
-            except Exception, ex:
+            except Exception as ex:
                 self.log.warn('Exception with listener "%s" for event %s: %s' % \
                     (listener.function.__name__, event, ex))
 
@@ -694,7 +694,7 @@ class Client(object):
 
     def receive_messages(self, messages):
         self.log.info('Received %d messages' % len(messages))
-        map(self._receive, messages)
+        list(map(self._receive, messages))
 
     def register_extension(self, extension):
         self._extensions.append(extension)
@@ -743,7 +743,7 @@ class Client(object):
             raise ValueError('Either id or event/function must be given')
         unregistered = 0
         if id is not None:
-            for event, listeners in self._event_listeners.iteritems():
+            for event, listeners in self._event_listeners.items():
                 for index, listener in enumerate(listeners):
                     if listener.id == id:
                         del listeners[index]
@@ -759,7 +759,7 @@ class Client(object):
                 del listeners[index]
             unregistered += len(to_remove)
         else:
-            for event, listeners in self._event_listeners.iteritems():
+            for event, listeners in self._event_listeners.items():
                 to_remove = []
                 for index, listener in enumerate(listeners):
                     if listener.function == function:

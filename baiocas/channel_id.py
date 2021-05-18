@@ -1,4 +1,4 @@
-class ChannelId(unicode):
+class ChannelId(str):
     
     # Prefix for meta channel IDs
     META = '/meta'
@@ -30,13 +30,22 @@ class ChannelId(unicode):
     # Pattern for deep wildcard channel IDs
     WILD_DEEP = '**'
 
-    def __init__(self, string=u'', encoding=None, errors='strict'):
-        self._parts = string.split('/')
+    def __new__(cls, o='', encoding='utf-8', errors='strict'):
+        if isinstance(o, bytes):
+            return super().__new__(cls, o, encoding=encoding, errors=errors)
+
+        return super().__new__(cls, o)
+
+    def __init__(self, *args, **kwargs):
+        self._parts = self.split('/')
+
+    def __hash__(self):
+        return super().__hash__()
 
     def __eq__(self, other):
-        if not isinstance(other, basestring):
+        if not isinstance(other, str):
             raise TypeError('Expected %s, got %s' % self.__class__, type(other))
-        return unicode.__eq__(self, other)
+        return str.__eq__(self, other)
 
     @property
     def is_meta(self):
@@ -58,7 +67,7 @@ class ChannelId(unicode):
         wilds = []
         parts = self._parts
         last_index = len(parts) - 1
-        for index in xrange(last_index, 0, -1):
+        for index in range(last_index, 0, -1):
             name = '/'.join(parts[:index]) + '/*'
             if index == last_index:
                 wilds.append(name)
@@ -69,6 +78,6 @@ class ChannelId(unicode):
     def convert(cls, value):
         if isinstance(value, cls):
             return value
-        if not isinstance(value, basestring):
+        if not isinstance(value, str):
             raise TypeError('Expected string, got %s' % type(value))
         return cls(value)
