@@ -238,7 +238,7 @@ class TestClient(AsyncTestCase):
         assert not mock_subscription.called
 
     def test_configure(self):
-        
+
         # Make sure blank calls keep the defaults
         self.client.configure()
         assert self.client.options == self.DEFAULT_OPTIONS
@@ -390,7 +390,7 @@ class TestClient(AsyncTestCase):
                 )
             ]
         })
-        
+
         # Make sure a single delayed connect was scheduled
         self.transport.clear_sent_messages()
         assert len(timeouts) == 1
@@ -674,13 +674,14 @@ class TestClient(AsyncTestCase):
 
         # Create a listener that logs messages keyed by channel for all channels
         captured_messages = defaultdict(list)
-        skipped_messages = [0]
+        # skipped_messages = [0]
+
         def _receive_message(channel, message):
             if message.failure or not only_failures:
                 captured_messages[channel.channel_id].append(message)
         channel = self.client.get_channel('/**')
         listener_id = channel.add_listener(_receive_message)
-        
+
         # Yield to the wrapped functionality, removing the listener on exit
         try:
             yield captured_messages
@@ -704,6 +705,7 @@ class TestClient(AsyncTestCase):
                 reference=timeout
             ))
             return timeout
+
         def _remove_timeout(reference):
             IOLoop.remove_timeout(self.io_loop, reference)
             for index, timeout in enumerate(timeouts):

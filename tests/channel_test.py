@@ -1,4 +1,4 @@
-from mock import MagicMock, Mock
+from mock import Mock
 from unittest import TestCase
 
 from baiocas.channel import Channel

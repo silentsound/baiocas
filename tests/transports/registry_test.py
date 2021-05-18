@@ -5,7 +5,7 @@ from baiocas.transports.registry import TransportRegistry
 
 
 class MockTransport(Transport):
-    
+
     def __init__(self, name, only_versions=None):
         self.__name = name
         self.__only_versions = only_versions

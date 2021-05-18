@@ -35,7 +35,7 @@ class TestChannelId(TestCase):
         channel_id = ChannelId('/test')
         assert channel_id == '/test'
         assert channel_id == '/test'
-        assert not channel_id == '/Test'
+        assert channel_id != '/Test'
         assert channel_id == ChannelId('/test')
         self.assertRaises(TypeError, channel_id.__eq__, 0)
 
@@ -80,9 +80,8 @@ class TestChannelId(TestCase):
 
     def test_convert(self):
         channel_id = ChannelId('/test')
-        assert channel_id is ChannelId.convert(channel_id)
+        assert channel_id == ChannelId.convert(channel_id)
         channel_id = ChannelId.convert('/test')
-        assert not '/test' is channel_id
         assert isinstance(channel_id, ChannelId)
         assert channel_id == '/test'
         self.assertRaises(TypeError, ChannelId.convert, 0)

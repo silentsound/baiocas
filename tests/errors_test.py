@@ -41,7 +41,7 @@ class TestBayeuxError(TestCase):
 
 
 class TestActionError(TestBayeuxError):
-    
+
     # The class of the error to test
     ERROR_CLASS = errors.ActionError
 
@@ -53,13 +53,13 @@ class TestActionError(TestBayeuxError):
 
 
 class TestBatchError(TestBayeuxError):
-    
+
     # The class of the error to test
     ERROR_CLASS = errors.BatchError
 
 
 class TestCommunicationError(TestBayeuxError):
-    
+
     # The class of the error to test
     ERROR_CLASS = errors.CommunicationError
 
@@ -71,7 +71,7 @@ class TestCommunicationError(TestBayeuxError):
 
 
 class TestConnectionStringError(TestBayeuxError):
-    
+
     # The class of the error to test
     ERROR_CLASS = errors.ConnectionStringError
 
@@ -83,7 +83,7 @@ class TestConnectionStringError(TestBayeuxError):
 
 
 class TestServerError(TestBayeuxError):
-    
+
     # The class of the error to test
     ERROR_CLASS = errors.ServerError
 
@@ -95,7 +95,7 @@ class TestServerError(TestBayeuxError):
 
 
 class TestStatusError(TestBayeuxError):
-    
+
     # The class of the error to test
     ERROR_CLASS = errors.StatusError
 
@@ -107,13 +107,13 @@ class TestStatusError(TestBayeuxError):
 
 
 class TestTimeoutError(TestBayeuxError):
-    
+
     # The class of the error to test
     ERROR_CLASS = errors.TimeoutError
 
 
 class TestTransportNegotiationError(TestBayeuxError):
-    
+
     # The class of the error to test
     ERROR_CLASS = errors.TransportNegotiationError
 
