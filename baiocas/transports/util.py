@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
 import time
 from email.utils import mktime_tz
 from email.utils import parsedate_tz

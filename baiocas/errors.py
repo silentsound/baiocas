@@ -4,8 +4,6 @@ Exceptions used with Baiocas.
 All exceptions inherit from :class:`.BayeuxError`. Exceptions not inheriting
 from this class are not raised directly by Baiocas.
 """
-from __future__ import absolute_import
-from __future__ import unicode_literals
 
 
 class BayeuxError(Exception):

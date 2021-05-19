@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
 from tornado import gen
 from tornado.curl_httpclient import CurlAsyncHTTPClient
 from tornado.httpclient import HTTPClient

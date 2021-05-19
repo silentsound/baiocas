@@ -24,7 +24,7 @@ repos:
     hooks:
       - id: reorder-python-imports
         args:
-          - "--add-import"
+          - "--remove-import"
           - "from __future__ import absolute_import"
-          - "--add-import"
+          - "--remove-import"
           - "from __future__ import unicode_literals"
