@@ -27,7 +27,7 @@ check: $(VENV)
 	$(VENVBIN)/pre-commit run --all-files
 
 .PHONY: test
-test:
+test: $(VENV)
 	$(VENVBIN)/pytest
 
 .PHONY: all
