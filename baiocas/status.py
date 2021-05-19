@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
+
 class ClientStatus(object):
 
     # State assumed after the handshake when the connection is broken

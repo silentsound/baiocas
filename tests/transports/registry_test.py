@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
 from unittest import TestCase
 
 from baiocas.transports.base import Transport
@@ -5,7 +8,7 @@ from baiocas.transports.registry import TransportRegistry
 
 
 class MockTransport(Transport):
-    
+
     def __init__(self, name, only_versions=None):
         self.__name = name
         self.__only_versions = only_versions

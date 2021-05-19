@@ -1,17 +1,23 @@
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
+import logging
 from collections import defaultdict
 from collections import namedtuple
 from contextlib import contextmanager
 from datetime import timedelta
-from mock import Mock, patch
+
+from mock import Mock
+from mock import patch
 from tornado.ioloop import IOLoop
 from tornado.testing import AsyncTestCase
-import logging
 
 from baiocas import errors
 from baiocas.channel_id import ChannelId
 from baiocas.client import Client
 from baiocas.extensions.base import Extension
-from baiocas.message import FailureMessage, Message
+from baiocas.message import FailureMessage
+from baiocas.message import Message
 from baiocas.status import ClientStatus
 from baiocas.transports.base import Transport
 
@@ -74,7 +80,7 @@ class MockTransport(Transport):
     def accept(self, bayeux_version):
         if self.__only_versions is None:
             return True
-        return version in self.__only_versions
+        return bayeux_version in self.__only_versions
 
     def clear_sent_messages(self):
         self.sent_messages = []
@@ -238,7 +244,7 @@ class TestClient(AsyncTestCase):
         assert not mock_subscription.called
 
     def test_configure(self):
-        
+
         # Make sure blank calls keep the defaults
         self.client.configure()
         assert self.client.options == self.DEFAULT_OPTIONS
@@ -390,7 +396,7 @@ class TestClient(AsyncTestCase):
                 )
             ]
         })
-        
+
         # Make sure a single delayed connect was scheduled
         self.transport.clear_sent_messages()
         assert len(timeouts) == 1
@@ -674,13 +680,14 @@ class TestClient(AsyncTestCase):
 
         # Create a listener that logs messages keyed by channel for all channels
         captured_messages = defaultdict(list)
-        skipped_messages = [0]
+        # skipped_messages = [0]
+
         def _receive_message(channel, message):
             if message.failure or not only_failures:
                 captured_messages[channel.channel_id].append(message)
         channel = self.client.get_channel('/**')
         listener_id = channel.add_listener(_receive_message)
-        
+
         # Yield to the wrapped functionality, removing the listener on exit
         try:
             yield captured_messages
@@ -704,8 +711,10 @@ class TestClient(AsyncTestCase):
                 reference=timeout
             ))
             return timeout
+
         def _remove_timeout(reference):
-            IOLoop.remove_timeout(self.io_loop, reference)
+            # HACK: This is not implemented
+            # IOLoop.remove_timeout(self.io_loop, reference)
             for index, timeout in enumerate(timeouts):
                 if timeout.reference == reference:
                     del timeouts[index]

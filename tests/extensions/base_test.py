@@ -1,5 +1,8 @@
-from unittest import TestCase
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
 import logging
+from unittest import TestCase
 
 from baiocas.extensions.base import Extension
 

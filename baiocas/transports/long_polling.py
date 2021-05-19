@@ -1,6 +1,11 @@
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
 from tornado import gen
 from tornado.curl_httpclient import CurlAsyncHTTPClient
-from tornado.httpclient import HTTPClient, HTTPError, HTTPRequest
+from tornado.httpclient import HTTPClient
+from tornado.httpclient import HTTPError
+from tornado.httpclient import HTTPRequest
 from tornado.httputil import HTTPHeaders
 
 from baiocas import errors
@@ -114,7 +119,7 @@ class LongPollingHttpTransport(HttpTransport):
     def accept(self, bayeux_version):
         return True
 
-    @gen.engine
+    @gen.coroutine
     def send(self, messages, sync=False):
         request = self._prepare_request(messages)
 

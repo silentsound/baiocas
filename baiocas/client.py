@@ -1,13 +1,18 @@
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
+import logging
 from contextlib import contextmanager
 from datetime import timedelta
+
 from tornado.ioloop import IOLoop
-import logging
 
 from baiocas import errors
 from baiocas.channel import Channel
 from baiocas.channel_id import ChannelId
 from baiocas.listener import Listener
-from baiocas.message import FailureMessage, Message
+from baiocas.message import FailureMessage
+from baiocas.message import Message
 from baiocas.status import ClientStatus
 from baiocas.transports.long_polling import LongPollingHttpTransport
 from baiocas.transports.registry import TransportRegistry
@@ -125,8 +130,8 @@ class Client(object):
             method = outgoing and 'send' or 'receive'
             return getattr(extension, method)(message)
         except Exception as ex:
-            self.log.warn('Exception during execution of extension %s: %s' % \
-                (extension, ex))
+            self.log.warn('Exception during execution of extension %s: %s' %
+                          (extension, ex))
             self.fire(self.EVENT_EXTENSION_EXCEPTION, message, ex, outgoing=outgoing)
 
     def _apply_incoming_extensions(self, message):
@@ -154,7 +159,7 @@ class Client(object):
     def _cancel_delayed_send(self):
         if not self._scheduled_send:
             return
-        if self._scheduled_send.callback:
+        if self._scheduled_send:
             self.log.debug('Cancelling delayed send')
             self.io_loop.remove_timeout(self._scheduled_send)
         self._scheduled_send = None
@@ -200,8 +205,8 @@ class Client(object):
     def _delay_send(self, method, *args, **kwargs):
         self._cancel_delayed_send()
         delay = self._advice['interval'] + self._backoff_period
-        self.log.debug('Send scheduled in %sms, interval = %s, backoff = %s: %s' % \
-            (delay, self._advice['interval'], self._backoff_period, method.__name__))
+        self.log.debug('Send scheduled in %sms, interval = %s, backoff = %s: %s' %
+                       (delay, self._advice['interval'], self._backoff_period, method.__name__))
         if delay == 0:
             method(*args, **kwargs)
         else:
@@ -234,12 +239,13 @@ class Client(object):
     def _handle_connect_failure(self, message, exception):
         self.log.debug('Handling failed connect')
         self._connected = False
-        self._notify_connect_failure(FailureMessage.from_message(message,
+        self._notify_connect_failure(FailureMessage.from_message(
+            message,
             exception=exception,
             advice={
                 FailureMessage.FIELD_RECONNECT: FailureMessage.RECONNECT_RETRY,
-                FailureMessage.FIELD_INTERVAL: self._backoff_period
-            }
+                FailureMessage.FIELD_INTERVAL: self._backoff_period,
+            },
         ))
 
     def _handle_connect_response(self, message):
@@ -291,12 +297,13 @@ class Client(object):
 
     def _handle_handshake_failure(self, message, exception):
         self.log.debug('Handling failed handshake')
-        self._notify_handshake_failure(FailureMessage.from_message(message,
+        self._notify_handshake_failure(FailureMessage.from_message(
+            message,
             exception=exception,
             advice={
                 FailureMessage.FIELD_RECONNECT: FailureMessage.RECONNECT_RETRY,
-                FailureMessage.FIELD_INTERVAL: self._backoff_period
-            }
+                FailureMessage.FIELD_INTERVAL: self._backoff_period,
+            },
         ))
 
     def _handle_handshake_response(self, message):
@@ -359,7 +366,7 @@ class Client(object):
                 self._notify_listeners(message.channel, message)
             else:
                 self.log.warn('Unknown message received: %s' % message)
-        elif message.successful == True:
+        elif message.successful is True:
             self.log.debug('Client received successful message')
             self._notify_listeners(ChannelId.META_PUBLISH, message)
         else:
@@ -431,15 +438,15 @@ class Client(object):
 
         # Create the handshake message
         message = Message(properties,
-            version=self.BAYEUX_VERSION,
-            minimum_version=self.MINIMUM_BAYEUX_VERSION,
-            channel=ChannelId.META_HANDSHAKE,
-            supported_connection_types=transport_names,
-            advice={
-                Message.FIELD_TIMEOUT: self._advice[Message.FIELD_TIMEOUT],
-                Message.FIELD_INTERVAL: self._advice[Message.FIELD_INTERVAL]
-            }
-        )
+                          version=self.BAYEUX_VERSION,
+                          minimum_version=self.MINIMUM_BAYEUX_VERSION,
+                          channel=ChannelId.META_HANDSHAKE,
+                          supported_connection_types=transport_names,
+                          advice={
+                              Message.FIELD_TIMEOUT: self._advice[Message.FIELD_TIMEOUT],
+                              Message.FIELD_INTERVAL: self._advice[Message.FIELD_INTERVAL]
+                          }
+                          )
 
         # Pick the first available transport as the initial transport since we
         # don't know what the server currently supports
@@ -641,8 +648,8 @@ class Client(object):
         self.log.debug('Firing event %s' % event)
         for listener in self._event_listeners.get(event, []):
             try:
-                self.log.debug('Invoking callback "%s" for event %s' % \
-                    (listener.function.__name__, event))
+                self.log.debug('Invoking callback "%s" for event %s' %
+                               (listener.function.__name__, event))
                 final_args = args
                 final_kwargs = kwargs
                 if listener.extra_args:
@@ -652,8 +659,8 @@ class Client(object):
                     final_kwargs.update(listener.extra_kwargs)
                 listener.function(self, *final_args, **final_kwargs)
             except Exception as ex:
-                self.log.warn('Exception with listener "%s" for event %s: %s' % \
-                    (listener.function.__name__, event, ex))
+                self.log.warn('Exception with listener "%s" for event %s: %s' %
+                              (listener.function.__name__, event, ex))
 
     def flush_batch(self):
         self.log.debug('Flushing batch of %d messages' % len(self._message_queue))

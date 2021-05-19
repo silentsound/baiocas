@@ -1,7 +1,10 @@
-from http.cookies import Morsel
-from email.utils import formatdate
-from unittest import TestCase
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
 import time
+from email.utils import formatdate
+from http.cookies import Morsel
+from unittest import TestCase
 
 from baiocas.transports.util import is_cookie_expired
 

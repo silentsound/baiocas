@@ -1,6 +1,10 @@
-from email.utils import mktime_tz, parsedate_tz
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
 import http.cookies
 import time
+from email.utils import mktime_tz
+from email.utils import parsedate_tz
 
 from baiocas.transports.base import Transport
 from baiocas.transports.util import is_cookie_expired
@@ -24,8 +28,8 @@ class HttpTransport(Transport):
 
     def configure(self, **options):
         if self.OPTION_HEADERS in options:
-            headers = dict((name.lower(), values) for name, values 
-                in options[self.OPTION_HEADERS].items())
+            headers = dict((name.lower(), values) for name, values
+                           in options[self.OPTION_HEADERS].items())
             options[self.OPTION_HEADERS] = headers
         super(HttpTransport, self).configure(**options)
 

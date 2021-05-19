@@ -1,7 +1,10 @@
+from __future__ import absolute_import
+from __future__ import unicode_literals
 
 from email.utils import formatdate
-from mock import patch
 from unittest import TestCase
+
+from mock import patch
 
 from baiocas.client import Client
 from baiocas.extensions import timestamp
