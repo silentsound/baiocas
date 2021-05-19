@@ -2,6 +2,7 @@ PYTHON ?= python3
 VIRTUALENV ?= virtualenv -p $(PYTHON)
 VENV = venv
 VENVBIN = $(VENV)/bin
+DEVBUILD ?= dev
 
 .PHONY: default
 default: all
@@ -35,5 +36,5 @@ all: check lint test
 .PHONY: release
 release: $(VENV)
 	$(VENVBIN)/pip install setuptools wheel twine
-	$(VENVBIN)/python setup.py sdist bdist_wheel
+	$(VENVBIN)/python setup.py $(DEVBUILD) sdist bdist_wheel
 	$(VENVBIN)/twine upload dist/*
