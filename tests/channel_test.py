@@ -1,5 +1,9 @@
-from mock import Mock
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
 from unittest import TestCase
+
+from mock import Mock
 
 from baiocas.channel import Channel
 from baiocas.channel_id import ChannelId

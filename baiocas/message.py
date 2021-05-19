@@ -1,8 +1,8 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-from simplejson import dumps
-from simplejson import loads
+from json import dumps
+from json import loads
 
 from baiocas.channel_id import ChannelId
 

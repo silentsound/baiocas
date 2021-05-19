@@ -119,7 +119,7 @@ class LongPollingHttpTransport(HttpTransport):
     def accept(self, bayeux_version):
         return True
 
-    @gen.engine
+    @gen.coroutine
     def send(self, messages, sync=False):
         request = self._prepare_request(messages)
 

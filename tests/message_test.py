@@ -1,9 +1,13 @@
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
 from email.utils import formatdate
-from simplejson import dumps
+from json import dumps
 from unittest import TestCase
 
 from baiocas.channel_id import ChannelId
-from baiocas.message import FailureMessage, Message
+from baiocas.message import FailureMessage
+from baiocas.message import Message
 
 
 class TestMessage(TestCase):

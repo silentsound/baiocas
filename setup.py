@@ -24,11 +24,8 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
-        'mock >= 0.7.2',
         'pycurl >= 7.19.0',
-        'pytest >= 2.1.3',
-        'simplejson >= 2.2.1',
-        'tornado >= 2.2.0'
+        'tornado > 3.0'
     ],
     entry_points='',
     python_requires='>=3.7',

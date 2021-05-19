@@ -159,7 +159,7 @@ class Client(object):
     def _cancel_delayed_send(self):
         if not self._scheduled_send:
             return
-        if self._scheduled_send.callback:
+        if self._scheduled_send:
             self.log.debug('Cancelling delayed send')
             self.io_loop.remove_timeout(self._scheduled_send)
         self._scheduled_send = None

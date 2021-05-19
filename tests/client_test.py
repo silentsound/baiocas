@@ -1,17 +1,23 @@
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
+import logging
 from collections import defaultdict
 from collections import namedtuple
 from contextlib import contextmanager
 from datetime import timedelta
-from mock import Mock, patch
+
+from mock import Mock
+from mock import patch
 from tornado.ioloop import IOLoop
 from tornado.testing import AsyncTestCase
-import logging
 
 from baiocas import errors
 from baiocas.channel_id import ChannelId
 from baiocas.client import Client
 from baiocas.extensions.base import Extension
-from baiocas.message import FailureMessage, Message
+from baiocas.message import FailureMessage
+from baiocas.message import Message
 from baiocas.status import ClientStatus
 from baiocas.transports.base import Transport
 
@@ -707,7 +713,8 @@ class TestClient(AsyncTestCase):
             return timeout
 
         def _remove_timeout(reference):
-            IOLoop.remove_timeout(self.io_loop, reference)
+            # HACK: This is not implemented
+            # IOLoop.remove_timeout(self.io_loop, reference)
             for index, timeout in enumerate(timeouts):
                 if timeout.reference == reference:
                     del timeouts[index]
