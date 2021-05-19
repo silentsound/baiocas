@@ -60,8 +60,8 @@ class Channel(object):
                 self.log.debug('Notifying listener "%s" of message' % listener.function.__name__)
                 listener.function(channel, message, *listener.extra_args, **listener.extra_kwargs)
             except Exception as ex:
-                self.log.warn('Exception with listener "%s" with %s: %s' %
-                              (listener.function.__name__, message, ex))
+                self.log.warning('Exception with listener "%s" with %s: %s' %
+                                 (listener.function.__name__, message, ex))
                 self._client.fire(self._client.EVENT_LISTENER_EXCEPTION, listener, message, ex)
 
     def _remove_listener(self, listeners, id=None, function=None):

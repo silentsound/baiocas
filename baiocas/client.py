@@ -127,8 +127,8 @@ class Client(object):
             method = outgoing and 'send' or 'receive'
             return getattr(extension, method)(message)
         except Exception as ex:
-            self.log.warn('Exception during execution of extension %s: %s' %
-                          (extension, ex))
+            self.log.warning('Exception during execution of extension %s: %s' %
+                             (extension, ex))
             self.fire(self.EVENT_EXTENSION_EXCEPTION, message, ex, outgoing=outgoing)
 
     def _apply_incoming_extensions(self, message):
@@ -362,7 +362,7 @@ class Client(object):
             if message.data:
                 self._notify_listeners(message.channel, message)
             else:
-                self.log.warn('Unknown message received: %s' % message)
+                self.log.warning('Unknown message received: %s' % message)
         elif message.successful is True:
             self.log.debug('Client received successful message')
             self._notify_listeners(ChannelId.META_PUBLISH, message)
@@ -656,8 +656,8 @@ class Client(object):
                     final_kwargs.update(listener.extra_kwargs)
                 listener.function(self, *final_args, **final_kwargs)
             except Exception as ex:
-                self.log.warn('Exception with listener "%s" for event %s: %s' %
-                              (listener.function.__name__, event, ex))
+                self.log.warning('Exception with listener "%s" for event %s: %s' %
+                                 (listener.function.__name__, event, ex))
 
     def flush_batch(self):
         self.log.debug('Flushing batch of %d messages' % len(self._message_queue))
@@ -719,7 +719,7 @@ class Client(object):
 
     def register_transport(self, transport):
         if not self._transports.add(transport):
-            self.log.warn('Failed to register transport %s' % transport)
+            self.log.warning('Failed to register transport %s' % transport)
             return False
         self.log.debug('Registered transport %s' % transport)
         transport.register(self, url=self._url)
@@ -735,7 +735,7 @@ class Client(object):
 
     def unregister_extension(self, extension):
         if extension not in self._extensions:
-            self.log.warn('Failed to unregister extension %s, not registered' % extension)
+            self.log.warning('Failed to unregister extension %s, not registered' % extension)
             return False
         self._extensions.remove(extension)
         extension.unregister()
@@ -777,7 +777,7 @@ class Client(object):
     def unregister_transport(self, name):
         transport = self._transports.remove(name)
         if not transport:
-            self.log.warn('Failed to unregister transport %s, not registered' % name)
+            self.log.warning('Failed to unregister transport %s, not registered' % name)
             return None
         self.log.debug('Unregistered transport %s' % transport)
         transport.unregister()
