@@ -29,7 +29,8 @@ class LongPollingHttpTransport(HttpTransport):
     def _create_http_clients(self):
         try:
             AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient")
-        except ModuleNotFoundError:
+        # Can't use ModuleNotFoundError because it was added in Python 3.6
+        except ImportError:
             pass
         self._http_client = AsyncHTTPClient(io_loop=self.io_loop)
         self._blocking_http_client = HTTPClient(
