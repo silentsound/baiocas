@@ -38,6 +38,8 @@ jobs:
           python -m pip install -U pip
           python -m pip install virtualenv
           make venv
+          # Install pycurl variant
+          python -m pip install -e .[pycurl]
       - name: Lint with flake8
         run: |
           make lint
