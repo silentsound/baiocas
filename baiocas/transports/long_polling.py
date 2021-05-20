@@ -1,5 +1,5 @@
 from tornado import gen
-from tornado.curl_httpclient import CurlAsyncHTTPClient
+from tornado.httpclient import AsyncHTTPClient
 from tornado.httpclient import HTTPClient
 from tornado.httpclient import HTTPError
 from tornado.httpclient import HTTPRequest
@@ -27,9 +27,13 @@ class LongPollingHttpTransport(HttpTransport):
         self._create_http_clients()
 
     def _create_http_clients(self):
-        self._http_client = CurlAsyncHTTPClient(io_loop=self.io_loop)
+        try:
+            AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient")
+        except ModuleNotFoundError:
+            pass
+        self._http_client = AsyncHTTPClient(io_loop=self.io_loop)
         self._blocking_http_client = HTTPClient(
-            async_client_class=CurlAsyncHTTPClient
+            async_client_class=AsyncHTTPClient
         )
 
     def _handle_response(self, response, messages):

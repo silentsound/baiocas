@@ -20,6 +20,8 @@ setup(
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
@@ -33,9 +35,11 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
-        'pycurl>=7.19.0',
         'tornado>3.0'
     ],
+    extras_require={
+        'pycurl': ['pycurl>=7.22.0'],
+    },
     entry_points='',
     python_requires='>=3.5',
 )
