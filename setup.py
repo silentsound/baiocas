@@ -35,7 +35,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
-        'tornado>3.0'
+        'tornado>=6.0'
     ],
     extras_require={
         'pycurl': ['pycurl>=7.22.0'],
