@@ -36,7 +36,7 @@ class Client(object):
 
     MINIMUM_BAYEUX_VERSION = '0.9'
 
-    def __init__(self, url, io_loop=None, **options):
+    def __init__(self, url, **options):
 
         # Set up a logger for the client
         self.log = logging.getLogger('%s.%s' % (self.__module__, self.__class__.__name__))
@@ -44,8 +44,8 @@ class Client(object):
         # Save the URL
         self._url = url
 
-        # Use the default IO loop if not provided
-        self.io_loop = io_loop or IOLoop.instance()
+        # Use the default IO loop
+        self.io_loop = IOLoop.current()
 
         # Current client status and connection properties
         self._status = ClientStatus.UNCONNECTED
@@ -795,7 +795,7 @@ class Client(object):
             self.log.debug('Exited batch context manager')
 
 
-def get_client(url, io_loop=None, **options):
-    client = Client(url, io_loop=io_loop, **options)
-    client.register_transport(LongPollingHttpTransport(io_loop=io_loop))
+def get_client(url, **options):
+    client = Client(url, **options)
+    client.register_transport(LongPollingHttpTransport())
     return client

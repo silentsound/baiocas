@@ -32,7 +32,7 @@ class LongPollingHttpTransport(HttpTransport):
         # Can't use ModuleNotFoundError because it was added in Python 3.6
         except ImportError:
             pass
-        self._http_client = AsyncHTTPClient(io_loop=self.io_loop)
+        self._http_client = AsyncHTTPClient()
         self._blocking_http_client = HTTPClient(
             async_client_class=AsyncHTTPClient
         )

@@ -158,7 +158,8 @@ class TestClient(AsyncTestCase):
 
     def setUp(self):
         self.io_loop = self.get_new_ioloop()
-        self.client = Client('http://www.example.com', io_loop=self.io_loop)
+        self.client = Client('http://www.example.com')
+        self.client.io_loop = self.io_loop
         self.transport = MockTransport('mock-transport')
         self.client.register_transport(self.transport)
         self.mock_message = Message(channel='/test', data='dummy')
