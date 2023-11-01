@@ -9,6 +9,8 @@ from baiocas import errors
 from baiocas.message import Message
 from baiocas.transports.http import HttpTransport
 
+from asyncio.futures import Future
+
 
 class LongPollingHttpTransport(HttpTransport):
 
@@ -135,7 +137,7 @@ class LongPollingHttpTransport(HttpTransport):
             except HTTPError:
                 response = self._blocking_http_client._response
         else:
-            response = yield gen.Task(self._http_client.fetch, request)
+            response = yield self._http_client.fetch(request)
 
         # Handle the response. We catch all exceptions here so that a bad
         # response doesn't end up crashing the Tornado async framework.
