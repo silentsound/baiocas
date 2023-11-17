@@ -1,5 +1,3 @@
-
-
 class TransportRegistry(object):
 
     def __init__(self):

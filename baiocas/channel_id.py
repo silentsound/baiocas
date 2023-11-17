@@ -1,5 +1,3 @@
-
-
 class ChannelId(str):
 
     # Prefix for meta channel IDs
