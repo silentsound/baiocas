@@ -1,5 +1,3 @@
-
-
 class ClientStatus(object):
 
     # State assumed after the handshake when the connection is broken
