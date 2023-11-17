@@ -9,8 +9,6 @@ from baiocas import errors
 from baiocas.message import Message
 from baiocas.transports.http import HttpTransport
 
-from asyncio.futures import Future
-
 
 class LongPollingHttpTransport(HttpTransport):
 
