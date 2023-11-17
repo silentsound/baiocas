@@ -1,15 +1,10 @@
 ---
 repos:
-  - repo: git://github.com/pre-commit/pre-commit-hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v0.9.1
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
-      - id: autopep8-wrapper
-        args:
-          - "-i"
-          - "--ignore=E265,E309,E501"
-          - "--max-line-length=127"
       - id: debug-statements
       - id: flake8
         args:
@@ -19,8 +14,8 @@ repos:
       - id: check-merge-conflict
       - id: name-tests-test
         exclude: tests/(common.py|util.py|(helpers)/(.+).py)
-  - repo: git://github.com/asottile/reorder_python_imports
-    rev: v2.5.0
+  - repo: https://github.com/asottile/reorder_python_imports
+    rev: v3.12.0
     hooks:
       - id: reorder-python-imports
         args:
